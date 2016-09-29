@@ -248,4 +248,4 @@ set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_INVERSION_MASK_LE
 set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_CRC_LOWORD=47464" -section_id auto_signaltap_0
 set_global_assignment -name SLD_NODE_PARAMETER_ASSIGNMENT "SLD_NODE_CRC_HIWORD=50650" -section_id auto_signaltap_0
 set_instance_assignment -name PARTITION_HIERARCHY root_partition -to | -section_id Top
-set_global_assignment -name SLD_FILE "C:/Users/TeddyJack/ats3_redirector_ep4ce6/output_files/stp1_auto_stripped.stp"
+set_global_assignment -name SLD_FILE "C:/Users/TeddyJack/ats3_redirection_board_altera/output_files/stp1_auto_stripped.stp"

@@ -5,6 +5,7 @@ input FLAG_EMPTY,
 input FLAG_FULL,
 inout [15:0] FD,
 input fifo_empty,
+input [15:0] fifo_q,
 
 output reg SLOE,
 output reg SLWR,
@@ -13,12 +14,11 @@ output reg [1:0] FIFOADR,
 output PKTEND,
 output reg fifo_rdrq,
 
-output [2:0] state_monitor,
-output reg [15:0] data_from_usb
+output [2:0] state_monitor
 );
 
 assign state_monitor = state;
-assign FD = SLOE ? 16'hzzzz : fd;
+assign FD = SLOE ? 16'hzzzz : fifo_q;
 
 reg [2:0] state;
 parameter [2:0] idle = 0;
@@ -27,7 +27,6 @@ parameter [2:0] wr_state2 = 2;
 parameter [2:0] rd_state1 = 3;
 parameter [2:0] rd_state2 = 4;
 parameter [2:0] rd_state3 = 5;
-reg [15:0] fd;
 always@(posedge CLK or negedge RST)
 begin
 if(!RST)
@@ -35,7 +34,6 @@ if(!RST)
 	state <= idle;
 	SLWR <= 0;
 	fifo_rdrq <= 0;
-	fd <= 0;
 	FIFOADR <= 0;
 	SLOE <= 0;
 	SLRD <= 0;
@@ -49,12 +47,12 @@ else
 			FIFOADR <= 2'b00;
 			state <= rd_state1;
 			end
-//		else if(!fifo_empty)	// if we have some data for Slave FIFO
-//			begin
-//			FIFOADR <= 2'b10;
-//			state <= wr_state1;
-//			fifo_rdrq <= 1;
-//			end
+		else if(!fifo_empty)	// if we have some data for Slave FIFO
+			begin
+			FIFOADR <= 2'b10;
+			state <= wr_state1;
+			fifo_rdrq <= 1;
+			end
 		end
 	wr_state1:
 		begin
@@ -63,7 +61,6 @@ else
 			begin
 			state <= wr_state2;
 			SLWR <= 1;
-			fd <= fd + 1'b1;
 			end
 		end
 	wr_state2:
@@ -87,7 +84,6 @@ else
 		if(!FLAG_EMPTY)
 			begin
 			SLRD <= 1;
-			data_from_usb <= FD;
 			state <= rd_state3;
 			end
 		else

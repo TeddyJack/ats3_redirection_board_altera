@@ -64,12 +64,13 @@ out_fifo out_fifo(
 .rdreq(fifo_rdrq),
 .wrclk(RX_CLK0),
 .wrreq(p_ena & (!fifo_full)),
-.q(),
+.q(fifo_q),
 .rdempty(fifo_empty),
 .wrfull(fifo_full)
 );
 wire fifo_empty;
 wire fifo_full;
+wire [15:0] fifo_q;
 
 read_write_slave_fifo read_write_slave_fifo(
 .CLK(ifclk),
@@ -78,6 +79,7 @@ read_write_slave_fifo read_write_slave_fifo(
 .FLAG_FULL(FLAG_FULL),
 .FD(FD),
 .fifo_empty(fifo_empty),
+.fifo_q(fifo_q),
 
 .SLOE(SLOE),
 .SLWR(SLWR),
