@@ -35,6 +35,8 @@ inout SCL,
 output [3:0] GPIO
 );
 
+assign TX_CLK0 = RX_CLK0;
+
 pll pll(
 .inclk0(CLK_IN),
 .c0(ifclk)
@@ -43,34 +45,34 @@ wire ifclk;
 
 assign IFCLK = ifclk;
 
-deserializer deserializer_0(
+input_process_spi input_process_spi(
 .RST(RST),
+.SYS_CLK(ifclk),
 .RX_CLK(RX_CLK0),
 .RX_DATA(RX_DATA0),
 .RX_LOAD(RX_LOAD0),
 .RX_STOP(RX_STOP0),
 
-.P_ADDR(p_addr),
-.P_DATA(p_data),
-.P_ENA(p_ena)
-);
-wire [2:0] p_addr;
-wire [15:0] p_data;
-wire p_ena;
+.RD_REQ(fifo_rdrq),
+.FIFO_Q(fifo_q),
+.GOT_FULL_MSG(got_full_msg),
+.current_msg_len(current_msg_len),
 
-out_fifo out_fifo(
-.data(p_data),
-.rdclk(ifclk),
-.rdreq(fifo_rdrq),
-.wrclk(RX_CLK0),
-.wrreq(p_ena & (!fifo_full)),
-.q(fifo_q),
-.rdempty(fifo_empty),
-.wrfull(fifo_full)
+.type_ver_now(type_ver_now)
 );
-wire fifo_empty;
-wire fifo_full;
 wire [15:0] fifo_q;
+wire got_full_msg;
+wire [7:0] current_msg_len;
+wire type_ver_now;
+
+output_process_spi output_process_spi(
+.RST(RST),
+.RX_CLK(RX_CLK0),
+.TX_DATA(TX_DATA0),
+.TX_LOAD(TX_LOAD0),
+.TX_STOP(TX_STOP0),
+.type_ver_now(type_ver_now)
+);
 
 read_write_slave_fifo read_write_slave_fifo(
 .CLK(ifclk),
@@ -78,8 +80,9 @@ read_write_slave_fifo read_write_slave_fifo(
 .FLAG_EMPTY(FLAG_EMPTY),
 .FLAG_FULL(FLAG_FULL),
 .FD(FD),
-.fifo_empty(fifo_empty),
 .fifo_q(fifo_q),
+.GOT_FULL_MSG(got_full_msg),
+.MSG_LEN(current_msg_len),
 
 .SLOE(SLOE),
 .SLWR(SLWR),
@@ -89,6 +92,5 @@ read_write_slave_fifo read_write_slave_fifo(
 .fifo_rdrq(fifo_rdrq)
 );
 wire fifo_rdrq;
-
 
 endmodule

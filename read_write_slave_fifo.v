@@ -6,6 +6,8 @@ input FLAG_FULL,
 inout [15:0] FD,
 input fifo_empty,
 input [15:0] fifo_q,
+input GOT_FULL_MSG,
+input [7:0] MSG_LEN,
 
 output reg SLOE,
 output reg SLWR,
