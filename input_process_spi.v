@@ -8,11 +8,17 @@ input RX_STOP,
 
 input RD_REQ,
 output [15:0] FIFO_Q,
-output reg GOT_FULL_MSG,
-output [7:0] current_msg_len,
+output GOT_FULL_MSG,
+output OUTPUT_ALLOW,
 
-output reg type_ver_now
+output reg type_ver_now,
+output [2:0] state_monitor,
+output [7:0] msg_len_out,
+output reg [7:0] cont_counter
 );
+
+assign state_monitor = state;
+assign OUTPUT_ALLOW = output_state;
 
 deserializer deserializer(
 .RST(RST),
@@ -37,7 +43,9 @@ parameter [2:0] read_data		= 3'h3;
 parameter [2:0] read_chksum	= 3'h4;
 
 reg msg_has_chksum;
+wire [7:0] msg_len_in = data_len + non_data_len;
 reg [7:0] data_len;
+reg [7:0] non_data_len;
 reg [7:0] data_cnt;
 reg [15:0] msg_chksum;
 reg type_ver_already;
@@ -50,51 +58,65 @@ if(!RST)
 	state <= read_prefix;
 	msg_has_chksum <= 0;
 	data_len <= 0;
+	non_data_len <= 2;	// prefix and code_cmd
 	data_cnt <= 0;
 	msg_chksum <= 0;
 	type_ver_now <= 0;
 	type_ver_already <= 0;
 	type_ver_flag <= 0;
 	wr_req_len <= 0;
+	cont_counter <= 0;
 	end
 else if(p_ena)
 	case(state)
 	read_prefix:
 		begin
 		if(p_data == 16'h55AA)
+			begin
+			non_data_len <= 2;
 			state <= read_cod_cmd;
+			cont_counter <= cont_counter + 1'b1;
+			end
 		end
 	read_cod_cmd:
 		begin
 		msg_has_chksum <= p_data[1];
-		if(p_data[0])	// если содержится поле "длина"
+		non_data_len <= non_data_len + msg_has_chksum;
+		if(p_data[0])						// если сообщение содержит поле "длина"
 			state <= read_len;
-		else			// для команд с фиксированной длиной
+		else									// если сообщение не содержит поле "длина" (команда имеет фиксированную длину)
 			begin
-			state <= read_data;
 			// здесь определить длину в зависимости от кода команды
-			wr_req_len <= 1;
-			case(p_data)
-			16'h0140:	begin
-							data_len <= 2;
-							//if(!type_ver_already)		// чтобы только один раз, а не при каждом получении type_ver
-								type_ver_flag <= 1;
-							end
-			16'h0300:	data_len <= 16;
-			endcase
+			if(p_data == 16'hFF00)		// для команды "выйти из цикла приёма сообщений"
+				begin
+				state <= read_prefix;
+				data_len <= 0;
+				wr_req_len <= 1;
+				end
+			else								// для остальных команд с фиксированной длиной
+				begin
+				case(p_data)
+				16'h0140:	begin								// type ver
+								data_len <= 2;
+								//if(!type_ver_already)		// чтобы только один раз, а не при каждом получении type_ver
+									type_ver_flag <= 1;
+								end
+				16'h0300:	data_len <= 16;				// status
+				endcase
+				state <= read_data;
+				end
 			end
 		msg_chksum <= p_data;
 		end
 	read_len:
 		begin
-		wr_req_len <= 1;
 		data_len <= p_data[7:0];
 		state <= read_data;
 		msg_chksum <= msg_chksum + p_data;
+		non_data_len <= non_data_len + 1'b1;
 		end
 	read_data:
 		begin
-		wr_req_len <= 0;
 		if(data_cnt < (data_len - 1'b1))
 			data_cnt <= data_cnt + 1'b1;
 		else
@@ -104,6 +126,7 @@ else if(p_ena)
 				state <= read_chksum;
 			else
 				begin
+				wr_req_len <= 1;
 				state <= read_prefix;
 				if(type_ver_flag)
 					begin
@@ -111,81 +134,110 @@ else if(p_ena)
 					type_ver_already <= 1;
 					type_ver_flag <= 0;
 					end
+				
 				end
 			end
 		msg_chksum <= msg_chksum + p_data;
 		end
+	read_chksum:
+		begin
+		state <= read_prefix;
+		end
 	endcase
 else
+	begin
 	type_ver_now <= 0;
+	wr_req_len <= 0;
+	end
 end
 
 in_fifo_spi in_fifo_spi(
-.aclr(!RST),
+.aclr((!RST) | fifo_full),		// fifo_full только для отладки
 .data(p_data),
 .rdclk(SYS_CLK),
 .rdreq(RD_REQ),
 .wrclk(RX_CLK),
 .wrreq(p_ena),
 .q(FIFO_Q),
-.rdusedw(used)
+.rdusedw(used),
+.wrfull(fifo_full)
 );
 wire [7:0] used;
+wire fifo_full;
 
-assign current_msg_len = data_len + 2'd2;
-always@(posedge SYS_CLK or negedge RST)
-begin
-if(!RST)
-	begin
-	GOT_FULL_MSG <= 0;
-	end
-else
-	begin
-	if(used >= current_msg_len)
-		GOT_FULL_MSG <= 1;
-	else
-		GOT_FULL_MSG <= 0;
-	end
-end
+//always@(posedge SYS_CLK or negedge RST)
+//begin
+//if(!RST)
+//	begin
+//	GOT_FULL_MSG <= 0;
+//	end
+//else
+//	begin
+//	if(used >= msg_len_out)
+//		GOT_FULL_MSG <= 1;
+//	else
+//		GOT_FULL_MSG <= 0;
+//	end
+//end
 
 fifo_with_lengths fifo_with_lengths(
-.aclr(!RST),
-.data(current_msg_len),
-.rdclk(),
-.rdreq(),
+.aclr((!RST) | fifo_full),
+.data(msg_len_in),
+.rdclk(SYS_CLK),
+.rdreq(rd_req_len),
 .wrclk(RX_CLK),
 .wrreq(wr_req_len),
-.q()
+.q(msg_len_out),
+.rdempty(len_fifo_empty)
 );
+
+//wire [7:0] msg_len_out;	// commented coz added to ports
+wire len_fifo_empty;
+assign GOT_FULL_MSG = !len_fifo_empty;
 
 reg output_state;
 parameter output_idle			= 1'b0;
 parameter output_in_progress	= 1'b1;
 
 reg rd_req_len;
+reg [7:0] counter;
 
-always@(posedge RX_CLK or negedge RST)
+always@(posedge SYS_CLK or negedge RST)
 begin
 if(!RST)
 	begin
 	rd_req_len <= 0;
+	counter <= 0;
+	output_state <= 0;
 	end
-else
+else if(RD_REQ)
 	case(output_state)
 	output_idle:
 		begin
-		if(GOT_FULL_MSG && RD_REQ)
-			begin
-			rd_req_len <= 1;
+		//rd_req_len <= 0;
+		//if(RD_REQ)
+			//begin
 			output_state <= output_in_progress;
-			end
+			counter <= counter + 1'b1;
+			//end
 		end
 	output_in_progress:
-		begin
-		rd_req_len <= 0;
-		// добавить здесь переход обратно в idle
-		end
+		//if(RD_REQ)
+			begin
+			if(counter < (msg_len_out - 1'b1))
+				begin
+				counter <= counter + 1'b1;
+				end
+			else
+				begin
+				counter <= 0;
+				output_state <= output_idle;
+				rd_req_len <= 1;
+				end
+			end
 	endcase
+else
+	rd_req_len <= 0;
 end
 
 endmodule

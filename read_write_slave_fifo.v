@@ -4,10 +4,9 @@ input RST,
 input FLAG_EMPTY,
 input FLAG_FULL,
 inout [15:0] FD,
-input fifo_empty,
 input [15:0] fifo_q,
 input GOT_FULL_MSG,
-input [7:0] MSG_LEN,
+input READ_ALLOW,
 
 output reg SLOE,
 output reg SLWR,
@@ -49,7 +48,7 @@ else
 			FIFOADR <= 2'b00;
 			state <= rd_state1;
 			end
-		else if(!fifo_empty)	// if we have some data for Slave FIFO
+		else if(GOT_FULL_MSG)	// if we have some data for Slave FIFO
 			begin
 			FIFOADR <= 2'b10;
 			state <= wr_state1;
@@ -68,13 +67,15 @@ else
 	wr_state2:
 		begin
 		SLWR <= 0;
-		if(!fifo_empty)
+		if(READ_ALLOW)
 			begin
 			fifo_rdrq <= 1;
 			state <= wr_state1;
 			end
 		else
+			begin
 			state <= idle;
+			end
 		end
 	rd_state1:
 		begin
