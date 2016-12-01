@@ -9,7 +9,7 @@ input RX_STOP,
 input RD_REQ,
 output [15:0] FIFO_Q,
 output GOT_FULL_MSG,
-output OUTPUT_ALLOW,
+output MSG_IN_TRANSFER,
 
 output reg type_ver_now,
 output [2:0] state_monitor,
@@ -18,7 +18,7 @@ output reg [7:0] cont_counter
 );
 
 assign state_monitor = state;
-assign OUTPUT_ALLOW = output_state;
+assign MSG_IN_TRANSFER = output_state;
 
 deserializer deserializer(
 .RST(RST),
@@ -48,7 +48,6 @@ reg [7:0] data_len;
 reg [7:0] non_data_len;
 reg [7:0] data_cnt;
 reg [15:0] msg_chksum;
-reg type_ver_already;
 reg type_ver_flag;
 reg wr_req_len;
 always@(posedge RX_CLK or negedge RST)
@@ -62,7 +61,6 @@ if(!RST)
 	data_cnt <= 0;
 	msg_chksum <= 0;
 	type_ver_now <= 0;
-	type_ver_already <= 0;
 	type_ver_flag <= 0;
 	wr_req_len <= 0;
 	cont_counter <= 0;
@@ -81,7 +79,7 @@ else if(p_ena)
 	read_cod_cmd:
 		begin
 		msg_has_chksum <= p_data[1];
-		non_data_len <= non_data_len + msg_has_chksum;
+		non_data_len <= non_data_len + msg_has_chksum;	// учитываем поле "контр. сумма" при вычислении длины сообщения
 		if(p_data[0])						// если сообщение содержит поле "длина"
 			state <= read_len;
 		else									// если сообщение не содержит поле "длина" (команда имеет фиксированную длину)
@@ -98,8 +96,7 @@ else if(p_ena)
 				case(p_data)
 				16'h0140:	begin								// type ver
 								data_len <= 2;
-								//if(!type_ver_already)		// чтобы только один раз, а не при каждом получении type_ver
-									type_ver_flag <= 1;
+								type_ver_flag <= 1;
 								end
 				16'h0300:	data_len <= 16;				// status
 				endcase
@@ -113,7 +110,7 @@ else if(p_ena)
 		data_len <= p_data[7:0];
 		state <= read_data;
 		msg_chksum <= msg_chksum + p_data;
-		non_data_len <= non_data_len + 1'b1;
+		non_data_len <= non_data_len + 1'b1;	// учитываем поле "data len" при вычислении длины сообщения
 		end
 	read_data:
 		begin
@@ -131,7 +128,6 @@ else if(p_ena)
 				if(type_ver_flag)
 					begin
 					type_ver_now <= 1;
-					type_ver_already <= 1;
 					type_ver_flag <= 0;
 					end
 				
@@ -214,27 +210,25 @@ else if(RD_REQ)
 	case(output_state)
 	output_idle:
 		begin
-		//rd_req_len <= 0;
-		//if(RD_REQ)
-			//begin
+		if(GOT_FULL_MSG)
+			begin
 			output_state <= output_in_progress;
 			counter <= counter + 1'b1;
-			//end
+			end
 		end
 	output_in_progress:
-		//if(RD_REQ)
+		begin
+		if(counter < (msg_len_out - 1'b1))
 			begin
-			if(counter < (msg_len_out - 1'b1))
-				begin
-				counter <= counter + 1'b1;
-				end
-			else
-				begin
-				counter <= 0;
-				output_state <= output_idle;
-				rd_req_len <= 1;
-				end
+			counter <= counter + 1'b1;
 			end
+		else
+			begin
+			counter <= 0;
+			output_state <= output_idle;
+			rd_req_len <= 1;
+			end
+		end
 	endcase
 else
 	rd_req_len <= 0;

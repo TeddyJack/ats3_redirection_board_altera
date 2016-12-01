@@ -6,14 +6,13 @@ input FLAG_FULL,
 inout [15:0] FD,
 input [15:0] fifo_q,
 input GOT_FULL_MSG,
-input READ_ALLOW,
+input MSG_IN_TRANSFER,
 
 output reg SLOE,
 output reg SLWR,
 output reg SLRD,
 output reg [1:0] FIFOADR,
 output PKTEND,
-output reg fifo_rdrq,
 
 output [2:0] state_monitor
 );
@@ -34,7 +33,6 @@ if(!RST)
 	begin
 	state <= idle;
 	SLWR <= 0;
-	fifo_rdrq <= 0;
 	FIFOADR <= 0;
 	SLOE <= 0;
 	SLRD <= 0;
@@ -48,33 +46,31 @@ else
 			FIFOADR <= 2'b00;
 			state <= rd_state1;
 			end
-		else if(GOT_FULL_MSG)	// if we have some data for Slave FIFO
+		else if(!FLAG_FULL && GOT_FULL_MSG)	// if we have some data for Slave FIFO
 			begin
 			FIFOADR <= 2'b10;
 			state <= wr_state1;
-			fifo_rdrq <= 1;
+			SLWR <= 1;
 			end
 		end
 	wr_state1:
 		begin
-		fifo_rdrq <= 0;
-		if(!FLAG_FULL)				// if Slave FIFO has free space
-			begin
-			state <= wr_state2;
-			SLWR <= 1;
-			end
+		SLWR <= 0;
+		state <= wr_state2;
 		end
 	wr_state2:
 		begin
-		SLWR <= 0;
-		if(READ_ALLOW)
+		if(!FLAG_FULL)
 			begin
-			fifo_rdrq <= 1;
-			state <= wr_state1;
-			end
-		else
-			begin
-			state <= idle;
+			if(MSG_IN_TRANSFER)
+				begin
+				SLWR <= 1;
+				state <= wr_state1;
+				end
+			else
+				begin
+				state <= idle;
+				end
 			end
 		end
 	rd_state1:

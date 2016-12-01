@@ -53,16 +53,16 @@ input_process_spi input_process_spi(
 .RX_LOAD(RX_LOAD0),
 .RX_STOP(RX_STOP0),
 
-.RD_REQ(fifo_rdrq),
+.RD_REQ(SLWR),
 .FIFO_Q(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
-.OUTPUT_ALLOW(output_allow),
+.MSG_IN_TRANSFER(msg_in_transfer),
 
 .type_ver_now(type_ver_now)
 );
 wire [15:0] fifo_q;
 wire got_full_msg;
-wire output_allow;
+wire msg_in_transfer;
 wire type_ver_now;
 
 output_process_spi output_process_spi(
@@ -82,15 +82,13 @@ read_write_slave_fifo read_write_slave_fifo(
 .FD(FD),
 .fifo_q(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
-.READ_ALLOW(output_allow),
+.MSG_IN_TRANSFER(msg_in_transfer),
 
 .SLOE(SLOE),
 .SLWR(SLWR),
 .SLRD(SLRD),
 .FIFOADR(FIFOADR),
-.PKTEND(PKTEND),
-.fifo_rdrq(fifo_rdrq)
+.PKTEND(PKTEND)
 );
-wire fifo_rdrq;
 
 endmodule
