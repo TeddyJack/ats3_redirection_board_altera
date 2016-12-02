@@ -6,7 +6,6 @@ input FLAG_FULL,
 inout [15:0] FD,
 input [15:0] fifo_q,
 input GOT_FULL_MSG,
-input MSG_IN_TRANSFER,
 
 output reg SLOE,
 output reg SLWR,
@@ -21,12 +20,12 @@ assign state_monitor = state;
 assign FD = SLOE ? 16'hzzzz : fifo_q;
 
 reg [2:0] state;
-parameter [2:0] idle = 0;
-parameter [2:0] wr_state1 = 1;
-parameter [2:0] wr_state2 = 2;
-parameter [2:0] rd_state1 = 3;
-parameter [2:0] rd_state2 = 4;
-parameter [2:0] rd_state3 = 5;
+parameter [2:0] idle						= 3'h0;
+parameter [2:0] wr_state1				= 3'h1;
+parameter [2:0] wr_state2				= 3'h2;
+parameter [2:0] rd_state1				= 3'h3;
+parameter [2:0] rd_state2				= 3'h4;
+parameter [2:0] rd_state3				= 3'h5;
 always@(posedge CLK or negedge RST)
 begin
 if(!RST)
@@ -50,28 +49,25 @@ else
 			begin
 			FIFOADR <= 2'b10;
 			state <= wr_state1;
-			SLWR <= 1;
 			end
 		end
-	wr_state1:
-		begin
-		SLWR <= 0;
-		state <= wr_state2;
-		end
-	wr_state2:
+	wr_state1:	// "0"
 		begin
 		if(!FLAG_FULL)
 			begin
-			if(MSG_IN_TRANSFER)
+			if(GOT_FULL_MSG)
 				begin
+				state <= wr_state2;
 				SLWR <= 1;
-				state <= wr_state1;
 				end
 			else
-				begin
 				state <= idle;
-				end
 			end
+		end
+	wr_state2:	// "1"
+		begin
+		SLWR <= 0;
+		state <= wr_state1;
 		end
 	rd_state1:
 		begin

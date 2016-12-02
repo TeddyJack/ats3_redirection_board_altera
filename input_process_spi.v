@@ -8,8 +8,7 @@ input RX_STOP,
 
 input RD_REQ,
 output [15:0] FIFO_Q,
-output GOT_FULL_MSG,
-output MSG_IN_TRANSFER,
+output reg GOT_FULL_MSG,
 
 output reg type_ver_now,
 output [2:0] state_monitor,
@@ -18,7 +17,6 @@ output reg [7:0] cont_counter
 );
 
 assign state_monitor = state;
-assign MSG_IN_TRANSFER = output_state;
 
 deserializer deserializer(
 .RST(RST),
@@ -161,21 +159,6 @@ in_fifo_spi in_fifo_spi(
 wire [7:0] used;
 wire fifo_full;
 
-//always@(posedge SYS_CLK or negedge RST)
-//begin
-//if(!RST)
-//	begin
-//	GOT_FULL_MSG <= 0;
-//	end
-//else
-//	begin
-//	if(used >= msg_len_out)
-//		GOT_FULL_MSG <= 1;
-//	else
-//		GOT_FULL_MSG <= 0;
-//	end
-//end
-
 fifo_with_lengths fifo_with_lengths(
 .aclr((!RST) | fifo_full),
 .data(msg_len_in),
@@ -189,11 +172,11 @@ fifo_with_lengths fifo_with_lengths(
 
 //wire [7:0] msg_len_out;	// commented coz added to ports
 wire len_fifo_empty;
-assign GOT_FULL_MSG = !len_fifo_empty;
 
-reg output_state;
-parameter output_idle			= 1'b0;
-parameter output_in_progress	= 1'b1;
+reg [1:0] output_state;
+parameter output_idle			= 2'h0;
+parameter output_in_progress	= 2'h1;
+parameter output_timeout		= 2'h2;
 
 reg rd_req_len;
 reg [7:0] counter;
@@ -204,34 +187,46 @@ if(!RST)
 	begin
 	rd_req_len <= 0;
 	counter <= 0;
-	output_state <= 0;
+	output_state <= output_idle;
+	GOT_FULL_MSG <= 0;
 	end
-else if(RD_REQ)
+else
 	case(output_state)
 	output_idle:
 		begin
-		if(GOT_FULL_MSG)
+		if(!len_fifo_empty)
+			GOT_FULL_MSG <= 1;
+		if(RD_REQ)
 			begin
 			output_state <= output_in_progress;
 			counter <= counter + 1'b1;
 			end
 		end
 	output_in_progress:
-		begin
-		if(counter < (msg_len_out - 1'b1))
+		if(RD_REQ)
 			begin
-			counter <= counter + 1'b1;
+			if(counter < (msg_len_out - 1'b1))
+				counter <= counter + 1'b1;
+			else
+				begin
+				counter <= 0;
+				output_state <= output_timeout;
+				rd_req_len <= 1;
+				GOT_FULL_MSG <= 0;
+				end
 			end
-		else
+		output_timeout:
 			begin
-			counter <= 0;
-			output_state <= output_idle;
-			rd_req_len <= 1;
+			rd_req_len <= 0;
+			if(counter < 2)	// таймаут 2 такта
+				counter <= counter + 1'b1;
+			else
+				begin
+				output_state <= output_idle;
+				counter <= 0;
+				end
 			end
-		end
 	endcase
-else
-	rd_req_len <= 0;
 end
 
 endmodule

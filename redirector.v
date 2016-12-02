@@ -56,13 +56,11 @@ input_process_spi input_process_spi(
 .RD_REQ(SLWR),
 .FIFO_Q(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
-.MSG_IN_TRANSFER(msg_in_transfer),
 
 .type_ver_now(type_ver_now)
 );
 wire [15:0] fifo_q;
 wire got_full_msg;
-wire msg_in_transfer;
 wire type_ver_now;
 
 output_process_spi output_process_spi(
@@ -82,7 +80,6 @@ read_write_slave_fifo read_write_slave_fifo(
 .FD(FD),
 .fifo_q(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
-.MSG_IN_TRANSFER(msg_in_transfer),
 
 .SLOE(SLOE),
 .SLWR(SLWR),
