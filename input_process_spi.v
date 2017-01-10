@@ -10,13 +10,9 @@ input RD_REQ,
 output [15:0] FIFO_Q,
 output reg GOT_FULL_MSG,
 
-output reg type_ver_now,
-output [2:0] state_monitor,
-output [7:0] msg_len_out,
-output reg [7:0] cont_counter
+output type_ver_now,
+output [7:0] msg_len_out
 );
-
-assign state_monitor = state;
 
 deserializer deserializer(
 .RST(RST),
@@ -33,135 +29,39 @@ wire [2:0] p_addr;
 wire [15:0] p_data;
 wire p_ena;
 
-reg [2:0] state;
-parameter [2:0] read_prefix	= 3'h0;
-parameter [2:0] read_cod_cmd	= 3'h1;
-parameter [2:0] read_len		= 3'h2;
-parameter [2:0] read_data		= 3'h3;
-parameter [2:0] read_chksum	= 3'h4;
+capacity_check capacity_check(
+.RST(RST),
+.RX_CLK(RX_CLK),
+.P_DATA_IN(p_data),
+.P_ENA_IN(p_ena),
+.USED(used),
 
-reg msg_has_chksum;
-wire [7:0] msg_len_in = data_len + non_data_len;
-reg [7:0] data_len;
-reg [7:0] non_data_len;
-reg [7:0] data_cnt;
-reg [15:0] msg_chksum;
-reg type_ver_flag;
-reg wr_req_len;
-always@(posedge RX_CLK or negedge RST)
-begin
-if(!RST)
-	begin
-	state <= read_prefix;
-	msg_has_chksum <= 0;
-	data_len <= 0;
-	non_data_len <= 2;	// prefix and code_cmd
-	data_cnt <= 0;
-	msg_chksum <= 0;
-	type_ver_now <= 0;
-	type_ver_flag <= 0;
-	wr_req_len <= 0;
-	cont_counter <= 0;
-	end
-else if(p_ena)
-	case(state)
-	read_prefix:
-		begin
-		if(p_data == 16'h55AA)
-			begin
-			non_data_len <= 2;
-			state <= read_cod_cmd;
-			cont_counter <= cont_counter + 1'b1;
-			end
-		end
-	read_cod_cmd:
-		begin
-		msg_has_chksum <= p_data[1];
-		non_data_len <= non_data_len + msg_has_chksum;	// учитываем поле "контр. сумма" при вычислении длины сообщения
-		if(p_data[0])						// если сообщение содержит поле "длина"
-			state <= read_len;
-		else									// если сообщение не содержит поле "длина" (команда имеет фиксированную длину)
-			begin
-			// здесь определить длину в зависимости от кода команды
-			if(p_data == 16'hFF00)		// для команды "выйти из цикла приёма сообщений"
-				begin
-				state <= read_prefix;
-				data_len <= 0;
-				wr_req_len <= 1;
-				end
-			else								// для остальных команд с фиксированной длиной
-				begin
-				case(p_data)
-				16'h0140:	begin								// type ver
-								data_len <= 2;
-								type_ver_flag <= 1;
-								end
-				16'h0300:	data_len <= 16;				// status
-				endcase
-				state <= read_data;
-				end
-			end
-		msg_chksum <= p_data;
-		end
-	read_len:
-		begin
-		data_len <= p_data[7:0];
-		state <= read_data;
-		msg_chksum <= msg_chksum + p_data;
-		non_data_len <= non_data_len + 1'b1;	// учитываем поле "data len" при вычислении длины сообщения
-		end
-	read_data:
-		begin
-		if(data_cnt < (data_len - 1'b1))
-			data_cnt <= data_cnt + 1'b1;
-		else
-			begin
-			data_cnt <= 0;
-			if(msg_has_chksum)
-				state <= read_chksum;
-			else
-				begin
-				wr_req_len <= 1;
-				state <= read_prefix;
-				if(type_ver_flag)
-					begin
-					type_ver_now <= 1;
-					type_ver_flag <= 0;
-					end
-				
-				end
-			end
-		msg_chksum <= msg_chksum + p_data;
-		end
-	read_chksum:
-		begin
-		state <= read_prefix;
-		end
-	endcase
-else
-	begin
-	type_ver_now <= 0;
-	wr_req_len <= 0;
-	end
-end
+.P_DATA_OUT(p_data_out),
+.P_ENA_OUT(p_ena_out),
+.MSG_LEN(msg_len),
+.WR_REQ_LEN(wr_req_len),
+.type_ver_now(type_ver_now)
+);
+wire [15:0] p_data_out;
+wire p_ena_out;
+wire [7:0] msg_len;
+wire wr_req_len;
 
 in_fifo_spi in_fifo_spi(
-.aclr((!RST) | fifo_full),		// fifo_full только для отладки
-.data(p_data),
+.aclr(!RST),
+.data(p_data_out),
 .rdclk(SYS_CLK),
 .rdreq(RD_REQ),
 .wrclk(RX_CLK),
-.wrreq(p_ena),
+.wrreq(p_ena_out),
 .q(FIFO_Q),
-.rdusedw(used),
-.wrfull(fifo_full)
+.wrusedw(used)
 );
-wire [7:0] used;
-wire fifo_full;
+wire [8:0] used;
 
 fifo_with_lengths fifo_with_lengths(
-.aclr((!RST) | fifo_full),
-.data(msg_len_in),
+.aclr(!RST),
+.data(msg_len),
 .rdclk(SYS_CLK),
 .rdreq(rd_req_len),
 .wrclk(RX_CLK),
