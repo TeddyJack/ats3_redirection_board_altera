@@ -81,7 +81,7 @@ parameter output_timeout		= 2'h2;
 reg rd_req_len;
 reg [7:0] counter;
 
-always@(posedge SYS_CLK or negedge RST)
+always@(posedge SYS_CLK or negedge RST)	// этот блок формирует сигнал GOT_FULL_MSG
 begin
 if(!RST)
 	begin
