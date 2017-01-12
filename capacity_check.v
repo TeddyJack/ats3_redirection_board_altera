@@ -22,7 +22,7 @@ wire clear_fifo = end_of_msg && (!capacity_ok);
 assign WR_REQ_LEN = end_of_msg && capacity_ok;
 
 three_words_fifo three_words_fifo(
-.aclr(!RST || clear_fifo),
+.aclr((!RST) || clear_fifo),
 .clock(RX_CLK),
 .data(P_DATA_IN),
 .rdreq(P_ENA_OUT),

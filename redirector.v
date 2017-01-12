@@ -53,7 +53,7 @@ input_process_spi input_process_spi(
 .RX_LOAD(RX_LOAD0),
 .RX_STOP(RX_STOP0),
 
-.RD_REQ(SLWR),
+.RD_REQ(rd_req),
 .FIFO_Q(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
 
@@ -83,9 +83,11 @@ read_write_slave_fifo read_write_slave_fifo(
 
 .SLOE(SLOE),
 .SLWR(SLWR),
+.RD_REQ(rd_req),
 .SLRD(SLRD),
 .FIFOADR(FIFOADR),
 .PKTEND(PKTEND)
 );
+wire rd_req;
 
 endmodule
