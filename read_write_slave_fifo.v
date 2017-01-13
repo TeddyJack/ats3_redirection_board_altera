@@ -7,10 +7,12 @@ inout [15:0] FD,
 input [15:0] fifo_q,
 input GOT_FULL_MSG,
 input SERIALIZER_BUSY,
+input [7:0] MSG_LEN,
 
 output reg SLOE,
 output reg SLWR,
 output RD_REQ,
+output reg MSG_SENT,
 output reg SLRD,
 output reg [1:0] FIFOADR,
 output PKTEND,
@@ -48,6 +50,7 @@ parameter [2:0] wr_state2				= 3'h2;
 parameter [2:0] rd_state1				= 3'h3;
 parameter [2:0] rd_state2				= 3'h4;
 parameter [2:0] rd_state3				= 3'h5;
+parameter [2:0] timeout					= 3'h6;
 always@(posedge CLK or negedge RST)
 begin
 if(!RST)
@@ -80,7 +83,7 @@ else
 		begin
 		if(!FLAG_FULL)
 			begin
-			if((data_type == prefix) || (data_type == src_len) || ((data_type == payload) && GOT_FULL_MSG))
+			if((data_type == prefix) || (data_type == src_len) || ((data_type == payload) && (payload_counter < MSG_LEN)))
 				begin
 				state <= wr_state2;
 				SLWR <= 1;
@@ -89,9 +92,10 @@ else
 				end
 			else
 				begin
-				state <= idle;
+				state <= timeout;
 				data_type <= none;
 				payload_counter <= 0;
+				MSG_SENT <= 1;
 				end
 			end
 		end
@@ -132,6 +136,17 @@ else
 			state <= idle;
 			SLOE <= 0;
 			end
+		end
+	timeout:
+		begin
+		MSG_SENT <= 0;
+		if(payload_counter < 2)	// таймаут 2 такта
+				payload_counter <= payload_counter + 1'b1;
+			else
+				begin
+				state <= idle;
+				payload_counter <= 0;
+				end
 		end
 	endcase
 end

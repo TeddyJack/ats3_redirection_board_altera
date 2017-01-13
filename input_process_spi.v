@@ -7,11 +7,13 @@ input RX_LOAD,
 input RX_STOP,
 
 input RD_REQ,
+input RD_REQ_LEN,
 output [15:0] FIFO_Q,
-output reg GOT_FULL_MSG,
+output GOT_FULL_MSG,
 
 output [7:0] msg_len_out
 );
+assign GOT_FULL_MSG = !len_fifo_empty;
 
 deserializer deserializer(
 .RST(RST),
@@ -61,70 +63,13 @@ fifo_with_lengths fifo_with_lengths(
 .aclr(!RST),
 .data(msg_len),
 .rdclk(SYS_CLK),
-.rdreq(rd_req_len),
+.rdreq(RD_REQ_LEN),
 .wrclk(RX_CLK),
 .wrreq(wr_req_len),
 .q(msg_len_out),
 .rdempty(len_fifo_empty)
 );
 
-//wire [7:0] msg_len_out;	// commented coz added to ports
 wire len_fifo_empty;
-
-reg [1:0] output_state;
-parameter output_idle			= 2'h0;
-parameter output_in_progress	= 2'h1;
-parameter output_timeout		= 2'h2;
-
-reg rd_req_len;
-reg [7:0] counter;
-
-always@(posedge SYS_CLK or negedge RST)	// этот блок формирует сигнал GOT_FULL_MSG
-begin
-if(!RST)
-	begin
-	rd_req_len <= 0;
-	counter <= 0;
-	output_state <= output_idle;
-	GOT_FULL_MSG <= 0;
-	end
-else
-	case(output_state)
-	output_idle:
-		begin
-		if(!len_fifo_empty)
-			GOT_FULL_MSG <= 1;
-		if(RD_REQ)
-			begin
-			output_state <= output_in_progress;
-			counter <= counter + 1'b1;
-			end
-		end
-	output_in_progress:
-		if(RD_REQ)
-			begin
-			if(counter < (msg_len_out - 1'b1))
-				counter <= counter + 1'b1;
-			else
-				begin
-				counter <= 0;
-				output_state <= output_timeout;
-				rd_req_len <= 1;
-				GOT_FULL_MSG <= 0;
-				end
-			end
-		output_timeout:
-			begin
-			rd_req_len <= 0;
-			if(counter < 2)	// таймаут 2 такта
-				counter <= counter + 1'b1;
-			else
-				begin
-				output_state <= output_idle;
-				counter <= 0;
-				end
-			end
-	endcase
-end
 
 endmodule

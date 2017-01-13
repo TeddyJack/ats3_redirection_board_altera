@@ -54,11 +54,14 @@ input_process_spi input_process_spi(
 .RX_STOP(RX_STOP0),
 
 .RD_REQ(rd_req),
+.RD_REQ_LEN(msg_sent),
 .FIFO_Q(fifo_q),
-.GOT_FULL_MSG(got_full_msg)
+.GOT_FULL_MSG(got_full_msg),
+.msg_len_out(msg_len)
 );
 wire [15:0] fifo_q;
 wire got_full_msg;
+wire [7:0] msg_len;
 
 output_process_spi output_process_spi(
 .RST(RST),
@@ -82,14 +85,17 @@ read_write_slave_fifo read_write_slave_fifo(
 .fifo_q(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
 .SERIALIZER_BUSY(serializer_busy),
+.MSG_LEN(msg_len),
 
 .SLOE(SLOE),
 .SLWR(SLWR),
 .RD_REQ(rd_req),
+.MSG_SENT(msg_sent),
 .SLRD(SLRD),
 .FIFOADR(FIFOADR),
 .PKTEND(PKTEND)
 );
 wire rd_req;
+wire msg_sent;
 
 endmodule
