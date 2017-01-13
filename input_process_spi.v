@@ -10,7 +10,6 @@ input RD_REQ,
 output [15:0] FIFO_Q,
 output reg GOT_FULL_MSG,
 
-output type_ver_now,
 output [7:0] msg_len_out
 );
 
@@ -39,8 +38,7 @@ capacity_check capacity_check(
 .P_DATA_OUT(p_data_out),
 .P_ENA_OUT(p_ena_out),
 .MSG_LEN(msg_len),
-.WR_REQ_LEN(wr_req_len),
-.type_ver_now(type_ver_now)
+.WR_REQ_LEN(wr_req_len)
 );
 wire [15:0] p_data_out;
 wire p_ena_out;

@@ -37,18 +37,18 @@
 `timescale 1 ps / 1 ps
 // synopsys translate_on
 module three_words_fifo (
-	aclr,
 	clock,
 	data,
 	rdreq,
+	sclr,
 	wrreq,
 	empty,
 	q);
 
-	input	  aclr;
 	input	  clock;
 	input	[15:0]  data;
 	input	  rdreq;
+	input	  sclr;
 	input	  wrreq;
 	output	  empty;
 	output	[15:0]  q;
@@ -59,17 +59,17 @@ module three_words_fifo (
 	wire [15:0] q = sub_wire1[15:0];
 
 	scfifo	scfifo_component (
-				.aclr (aclr),
 				.clock (clock),
 				.data (data),
 				.rdreq (rdreq),
+				.sclr (sclr),
 				.wrreq (wrreq),
 				.empty (sub_wire0),
 				.q (sub_wire1),
+				.aclr (),
 				.almost_empty (),
 				.almost_full (),
 				.full (),
-				.sclr (),
 				.usedw ());
 	defparam
 		scfifo_component.add_ram_output_register = "OFF",
@@ -116,8 +116,8 @@ endmodule
 // Retrieval info: PRIVATE: rsEmpty NUMERIC "1"
 // Retrieval info: PRIVATE: rsFull NUMERIC "0"
 // Retrieval info: PRIVATE: rsUsedW NUMERIC "0"
-// Retrieval info: PRIVATE: sc_aclr NUMERIC "1"
-// Retrieval info: PRIVATE: sc_sclr NUMERIC "0"
+// Retrieval info: PRIVATE: sc_aclr NUMERIC "0"
+// Retrieval info: PRIVATE: sc_sclr NUMERIC "1"
 // Retrieval info: PRIVATE: wsEmpty NUMERIC "0"
 // Retrieval info: PRIVATE: wsFull NUMERIC "1"
 // Retrieval info: PRIVATE: wsUsedW NUMERIC "0"
@@ -132,17 +132,17 @@ endmodule
 // Retrieval info: CONSTANT: OVERFLOW_CHECKING STRING "ON"
 // Retrieval info: CONSTANT: UNDERFLOW_CHECKING STRING "ON"
 // Retrieval info: CONSTANT: USE_EAB STRING "ON"
-// Retrieval info: USED_PORT: aclr 0 0 0 0 INPUT NODEFVAL "aclr"
 // Retrieval info: USED_PORT: clock 0 0 0 0 INPUT NODEFVAL "clock"
 // Retrieval info: USED_PORT: data 0 0 16 0 INPUT NODEFVAL "data[15..0]"
 // Retrieval info: USED_PORT: empty 0 0 0 0 OUTPUT NODEFVAL "empty"
 // Retrieval info: USED_PORT: q 0 0 16 0 OUTPUT NODEFVAL "q[15..0]"
 // Retrieval info: USED_PORT: rdreq 0 0 0 0 INPUT NODEFVAL "rdreq"
+// Retrieval info: USED_PORT: sclr 0 0 0 0 INPUT NODEFVAL "sclr"
 // Retrieval info: USED_PORT: wrreq 0 0 0 0 INPUT NODEFVAL "wrreq"
-// Retrieval info: CONNECT: @aclr 0 0 0 0 aclr 0 0 0 0
 // Retrieval info: CONNECT: @clock 0 0 0 0 clock 0 0 0 0
 // Retrieval info: CONNECT: @data 0 0 16 0 data 0 0 16 0
 // Retrieval info: CONNECT: @rdreq 0 0 0 0 rdreq 0 0 0 0
+// Retrieval info: CONNECT: @sclr 0 0 0 0 sclr 0 0 0 0
 // Retrieval info: CONNECT: @wrreq 0 0 0 0 wrreq 0 0 0 0
 // Retrieval info: CONNECT: empty 0 0 0 0 @empty 0 0 0 0
 // Retrieval info: CONNECT: q 0 0 16 0 @q 0 0 16 0

@@ -35,7 +35,7 @@ inout SCL,
 output [3:0] GPIO
 );
 
-assign TX_CLK0 = RX_CLK0;
+assign TX_CLK0 = !RX_CLK0;
 
 pll pll(
 .inclk0(CLK_IN),
@@ -55,13 +55,10 @@ input_process_spi input_process_spi(
 
 .RD_REQ(rd_req),
 .FIFO_Q(fifo_q),
-.GOT_FULL_MSG(got_full_msg),
-
-.type_ver_now(type_ver_now)
+.GOT_FULL_MSG(got_full_msg)
 );
 wire [15:0] fifo_q;
 wire got_full_msg;
-wire type_ver_now;
 
 output_process_spi output_process_spi(
 .RST(RST),
@@ -69,8 +66,12 @@ output_process_spi output_process_spi(
 .TX_DATA(TX_DATA0),
 .TX_LOAD(TX_LOAD0),
 .TX_STOP(TX_STOP0),
-.type_ver_now(type_ver_now)
+
+.FD(FD),
+.SLRD(SLRD),
+.BUSY(serializer_busy)
 );
+wire serializer_busy;
 
 read_write_slave_fifo read_write_slave_fifo(
 .CLK(ifclk),
@@ -80,6 +81,7 @@ read_write_slave_fifo read_write_slave_fifo(
 .FD(FD),
 .fifo_q(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
+.SERIALIZER_BUSY(serializer_busy),
 
 .SLOE(SLOE),
 .SLWR(SLWR),

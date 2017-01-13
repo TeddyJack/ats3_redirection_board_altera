@@ -6,6 +6,7 @@ input FLAG_FULL,
 inout [15:0] FD,
 input [15:0] fifo_q,
 input GOT_FULL_MSG,
+input SERIALIZER_BUSY,
 
 output reg SLOE,
 output reg SLWR,
@@ -14,11 +15,14 @@ output reg SLRD,
 output reg [1:0] FIFOADR,
 output PKTEND,
 
-output [2:0] state_monitor
+output [2:0] state_monitor,
+output reg [7:0] payload_counter,
+output error_detector
 );
 
 assign state_monitor = state;
 assign FD = SLOE ? 16'hzzzz : data;
+assign error_detector = SLWR && (payload_counter == 1) && (FD != 16'h55AA);
 
 reg [15:0] data;
 always@(*)
@@ -54,6 +58,7 @@ if(!RST)
 	SLOE <= 0;
 	SLRD <= 0;
 	data_type <= none;
+	payload_counter <= 0;
 	end
 else
 	case(state)
@@ -79,11 +84,14 @@ else
 				begin
 				state <= wr_state2;
 				SLWR <= 1;
+				if(data_type == payload)
+					payload_counter <= payload_counter + 1'b1;
 				end
 			else
 				begin
 				state <= idle;
 				data_type <= none;
+				payload_counter <= 0;
 				end
 			end
 		end
@@ -103,7 +111,7 @@ else
 		end
 	rd_state2:
 		begin
-		if(!FLAG_EMPTY)
+		if((!FLAG_EMPTY) && (!SERIALIZER_BUSY))
 			begin
 			SLRD <= 1;
 			state <= rd_state3;

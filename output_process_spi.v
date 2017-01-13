@@ -4,77 +4,24 @@ input RX_CLK,
 output TX_DATA,
 output TX_LOAD,
 output TX_STOP,
-input type_ver_now
+
+input [15:0] FD,		// not sure input or inout
+input SLRD,				// keep in mind that SLRD clocked with SYS_CLK, but serializer is driven by RX_CLK, but that's ok, we have 16 safe RX_CLK periods until new SLRD gonna be detected
+output BUSY
 );
+
+wire [15:0] DF = {FD[7:0],FD[15:8]};	// words are transferred via cypress in little-endian format, we convert into big-endian
 
 serializer serializer(
 .CLK(RX_CLK),
 .RST(RST),
 .ADDR(3'h1),
-.DATA(data),
-.ENA(ena),
+.DATA(DF),
+.ENA(SLRD),
 .SERIAL_OUT(TX_DATA),
 .LAST_BIT(TX_LOAD),
-.BUSY(busy)
+.BUSY(BUSY)
 );
-wire busy;
 
-reg [15:0] board_mode_message [5:0];
-initial
-begin
-board_mode_message[0] = 16'h55AA;
-board_mode_message[1] = 16'h0082;
-board_mode_message[2] = 16'h0001;
-board_mode_message[3] = 16'h1000;
-board_mode_message[4] = 16'h0000;
-board_mode_message[5] = 16'h0000;
-end
-
-reg [2:0] i;
-reg [15:0] data;
-reg ena;
-
-reg state;
-parameter idle					= 1'b0;
-parameter send_board_mode	= 1'b1;
-
-always@(posedge RX_CLK or negedge RST)
-begin
-if(!RST)
-	begin
-	state <= idle;
-	i <= 0;
-	data <= 0;
-	ena <= 0;
-	end
-else
-	case(state)
-	idle:
-		begin
-		if(type_ver_now)
-			state <= send_board_mode;
-		end
-	send_board_mode:
-		begin
-		if(i < 6)
-			begin
-			if(!busy && !ena)
-				begin
-				i <= i + 1'b1;
-				data <= board_mode_message[i];
-				ena <= 1;
-				end
-			else
-				ena <= 0;
-			end
-		else
-			begin
-			ena <= 0;
-			i <= 0;
-			state <= idle;
-			end
-		end
-	endcase
-end
 
 endmodule

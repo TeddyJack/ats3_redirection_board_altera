@@ -11,18 +11,17 @@ output [7:0] MSG_LEN,
 output WR_REQ_LEN,
 
 output reg [7:0] cont_counter,
-output reg type_ver_now,
 output [2:0] state_mon
 );
 
 wire [8:0] free_space = 9'd511 - USED;
 assign MSG_LEN = data_len + non_data_len;
 assign state_mon = state;
-wire clear_fifo = end_of_msg && (!capacity_ok);
+wire clear_fifo = (end_of_msg && (!capacity_ok)) || not_prefix;
 assign WR_REQ_LEN = end_of_msg && capacity_ok;
 
 three_words_fifo three_words_fifo(
-.aclr((!RST) || clear_fifo),
+.sclr((!RST) || clear_fifo),
 .clock(RX_CLK),
 .data(P_DATA_IN),
 .rdreq(P_ENA_OUT),
@@ -45,9 +44,9 @@ reg [7:0] data_len;
 reg [7:0] non_data_len;
 reg [7:0] data_cnt;
 reg [15:0] msg_chksum;
-reg type_ver_flag;
 reg capacity_ok;
 reg end_of_msg;
+reg not_prefix;
 always@(posedge RX_CLK or negedge RST)
 begin
 if(!RST)
@@ -58,11 +57,10 @@ if(!RST)
 	non_data_len <= 2;	// prefix and code_cmd
 	data_cnt <= 0;
 	msg_chksum <= 0;
-	type_ver_now <= 0;
-	type_ver_flag <= 0;
 	end_of_msg <= 0;
 	cont_counter <= 0;
 	capacity_ok <= 0;
+	not_prefix <= 0;
 	end
 else if(P_ENA_IN)
 	case(state)
@@ -76,6 +74,8 @@ else if(P_ENA_IN)
 			cont_counter <= cont_counter + 1'b1;
 			capacity_ok <= 0;
 			end
+		else
+			not_prefix <= 1;
 		end
 	read_cod_cmd:
 		begin
@@ -97,11 +97,8 @@ else if(P_ENA_IN)
 			else								// для остальных команд с фиксированной длиной
 				begin
 				case(P_DATA_IN)
-				16'h0140:	begin								// type ver
-								data_len <= 2;
-								type_ver_flag <= 1;
-								end
-				16'h0300:	data_len <= 252;				// status
+				16'h0140:	data_len <= 2;				// type ver
+				16'h0300:	data_len <= 252;			// status
 				endcase
 				state <= read_data;
 				end
@@ -131,12 +128,6 @@ else if(P_ENA_IN)
 				begin
 				end_of_msg <= 1;
 				state <= read_prefix;
-				if(type_ver_flag)
-					begin
-					type_ver_now <= 1;
-					type_ver_flag <= 0;
-					end
-				
 				end
 			end
 		msg_chksum <= msg_chksum + P_DATA_IN;
@@ -149,8 +140,8 @@ else if(P_ENA_IN)
 	endcase
 else
 	begin
-	type_ver_now <= 0;
 	end_of_msg <= 0;
+	not_prefix <= 0;
 	end
 end
 
