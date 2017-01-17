@@ -1,3 +1,5 @@
+`define PREFIX 16'h4444
+
 module read_write_slave_fifo(
 input CLK,
 input RST,
@@ -16,21 +18,23 @@ output reg MSG_SENT,
 output reg SLRD,
 output reg [1:0] FIFOADR,
 output PKTEND,
+output ENA,
 
 output [2:0] state_monitor,
 output reg [7:0] payload_counter,
-output error_detector
+output [1:0] data_type_mon
 );
 
 assign state_monitor = state;
+assign data_type_mon = data_type;
 assign FD = SLOE ? 16'hzzzz : data;
-assign error_detector = SLWR && (payload_counter == 1) && (FD != 16'h55AA);
+assign ENA = SLRD && (data_type == payload);		// may be dangerous because this is async logic
 
 reg [15:0] data;
 always@(*)
 case(data_type)
-prefix:	data = 16'hBBBB;
-src_len:	data = 16'hCCCC;
+prefix:	data = `PREFIX;
+src_len:	data = {8'h0,MSG_LEN};
 payload:	data = fifo_q;
 default:	data = 0;
 endcase
@@ -42,6 +46,9 @@ parameter [1:0] none		= 2'h0;
 parameter [1:0] prefix	= 2'h1;
 parameter [1:0] src_len	= 2'h2;
 parameter [1:0] payload	= 2'h3;
+
+reg [7:0] payload_len;
+reg [7:0] payload_dest;
 
 reg [2:0] state;
 parameter [2:0] idle						= 3'h0;
@@ -62,6 +69,8 @@ if(!RST)
 	SLRD <= 0;
 	data_type <= none;
 	payload_counter <= 0;
+	payload_len <= 0;
+	payload_dest <= 0;
 	end
 else
 	case(state)
@@ -112,29 +121,48 @@ else
 		begin
 		SLOE <= 1;
 		state <= rd_state2;
+		data_type <= prefix;
 		end
 	rd_state2:
 		begin
-		if((!FLAG_EMPTY) && (!SERIALIZER_BUSY))
+		if(!FLAG_EMPTY)
 			begin
-			SLRD <= 1;
-			state <= rd_state3;
+			if(!SERIALIZER_BUSY)
+				begin
+				SLRD <= 1;
+				state <= rd_state3;
+				end
 			end
 		else
 			begin
 			state <= idle;
 			SLOE <= 0;
+			data_type <= none;
 			end
 		end
 	rd_state3:
 		begin
 		SLRD <= 0;
-		if(!FLAG_EMPTY)
-			state <= rd_state2;
-		else
+		state <= rd_state2;
+		if((data_type == prefix) && (FD == `PREFIX))
 			begin
-			state <= idle;
-			SLOE <= 0;
+			data_type <= src_len;
+			end
+		else if(data_type == src_len)
+			begin
+			data_type <= payload;
+			payload_dest <= FD[15:8];
+			payload_len <= FD[7:0];
+			end
+		else if(data_type == payload)
+			begin
+			if(payload_counter < (payload_len - 1'b1))
+				payload_counter <= payload_counter + 1'b1;
+			else
+				begin
+				payload_counter <= 0;
+				data_type <= prefix;
+				end
 			end
 		end
 	timeout:
