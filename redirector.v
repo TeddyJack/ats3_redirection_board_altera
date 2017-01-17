@@ -45,7 +45,7 @@ wire ifclk;
 
 assign IFCLK = ifclk;
 
-input_process_spi input_process_spi(
+spi_process spi_process_0(
 .RST(RST),
 .SYS_CLK(ifclk),
 .RX_CLK(RX_CLK0),
@@ -57,15 +57,8 @@ input_process_spi input_process_spi(
 .RD_REQ_LEN(msg_sent),
 .FIFO_Q(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
-.msg_len_out(msg_len)
-);
-wire [15:0] fifo_q;
-wire got_full_msg;
-wire [7:0] msg_len;
+.msg_len_out(msg_len),
 
-output_process_spi output_process_spi(
-.RST(RST),
-.RX_CLK(RX_CLK0),
 .TX_DATA(TX_DATA0),
 .TX_LOAD(TX_LOAD0),
 .TX_STOP(TX_STOP0),
@@ -74,6 +67,9 @@ output_process_spi output_process_spi(
 .ENA(cy_ena),
 .BUSY(serializer_busy)
 );
+wire [15:0] fifo_q;
+wire got_full_msg;
+wire [7:0] msg_len;
 wire serializer_busy;
 
 read_write_slave_fifo read_write_slave_fifo(
