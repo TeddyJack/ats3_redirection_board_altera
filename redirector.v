@@ -1,15 +1,15 @@
 module redirector(
 input CLK_IN,
 input RST,
-// SPI_0
-input RX_CLK0,
-input RX_DATA0,
-input RX_LOAD0,
-input RX_STOP0,
-output TX_CLK0,
-output TX_DATA0,
-output TX_LOAD0,
-output TX_STOP0,
+// SPI bus
+input [3:0] RX_CLK,
+input [3:0] RX_DATA,
+input [3:0] RX_LOAD,
+input [3:0] RX_STOP,
+output [3:0] TX_CLK,
+output [3:0] TX_DATA,
+output [3:0] TX_LOAD,
+output [3:0] TX_STOP,
 // cypress exchange pins
 input FLAG_EMPTY,	// FLAGA
 input FLAG_FULL,	// FLAGB
@@ -35,7 +35,7 @@ inout SCL,
 output [3:0] GPIO
 );
 
-assign TX_CLK0 = !RX_CLK0;
+assign TX_CLK = (~RX_CLK);
 
 pll pll(
 .inclk0(CLK_IN),
@@ -45,32 +45,39 @@ wire ifclk;
 
 assign IFCLK = ifclk;
 
-spi_process spi_process_0(
-.RST(RST),
-.SYS_CLK(ifclk),
-.RX_CLK(RX_CLK0),
-.RX_DATA(RX_DATA0),
-.RX_LOAD(RX_LOAD0),
-.RX_STOP(RX_STOP0),
+wire [63:0] fifo_q;
+wire [3:0] got_full_msg;
+wire [31:0] msg_len;
+wire [3:0] serializer_busy;
 
-.RD_REQ(rd_req),
-.RD_REQ_LEN(msg_sent),
-.FIFO_Q(fifo_q),
-.GOT_FULL_MSG(got_full_msg),
-.msg_len_out(msg_len),
-
-.TX_DATA(TX_DATA0),
-.TX_LOAD(TX_LOAD0),
-.TX_STOP(TX_STOP0),
-
-.DATA({FD[7:0],FD[15:8]}),	// words are transferred via cypress in little-endian format, we convert into big-endian
-.ENA(cy_ena),
-.BUSY(serializer_busy)
-);
-wire [15:0] fifo_q;
-wire got_full_msg;
-wire [7:0] msg_len;
-wire serializer_busy;
+genvar i;
+generate
+for(i=0; i<4; i=i+1)
+	begin: wow
+	spi_process instance_name(
+	.RST(RST),
+	.SYS_CLK(ifclk),
+	.RX_CLK(RX_CLK[i]),
+	.RX_DATA(RX_DATA[i]),
+	.RX_LOAD(RX_LOAD[i]),
+	.RX_STOP(RX_STOP[i]),
+	
+	.RD_REQ(rd_req[i]),
+	.RD_REQ_LEN(msg_sent[i]),
+	.FIFO_Q(fifo_q[(16*i+15):(16*i)]),
+	.GOT_FULL_MSG(got_full_msg[i]),
+	.msg_len_out(msg_len[(8*i+7):(8*i)]),
+	
+	.TX_DATA(TX_DATA[i]),
+	.TX_LOAD(TX_LOAD[i]),
+	.TX_STOP(TX_STOP[i]),
+	
+	.DATA({FD[7:0],FD[15:8]}),	// words are transferred via cypress in little-endian format, we convert into big-endian
+	.ENA(cy_ena[i]),
+	.BUSY(serializer_busy[i])
+	);
+	end
+endgenerate
 
 read_write_slave_fifo read_write_slave_fifo(
 .CLK(ifclk),
@@ -78,10 +85,10 @@ read_write_slave_fifo read_write_slave_fifo(
 .FLAG_EMPTY(FLAG_EMPTY),
 .FLAG_FULL(FLAG_FULL),
 .FD({FD[7:0],FD[15:8]}),	// words are transferred via cypress in little-endian format, we convert into big-endian
-.fifo_q(fifo_q),
+.fifo_q_bus(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
 .SERIALIZER_BUSY(serializer_busy),
-.MSG_LEN(msg_len),
+.MSG_LEN_BUS(msg_len),
 
 .SLOE(SLOE),
 .SLWR(SLWR),
@@ -92,8 +99,8 @@ read_write_slave_fifo read_write_slave_fifo(
 .PKTEND(PKTEND),
 .ENA(cy_ena)
 );
-wire rd_req;
-wire msg_sent;
-wire cy_ena;
+wire [3:0] rd_req;
+wire [3:0] msg_sent;
+wire [3:0] cy_ena;
 
 endmodule

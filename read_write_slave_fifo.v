@@ -6,19 +6,19 @@ input RST,
 input FLAG_EMPTY,
 input FLAG_FULL,
 inout [15:0] FD,
-input [15:0] fifo_q,
-input GOT_FULL_MSG,
-input SERIALIZER_BUSY,
-input [7:0] MSG_LEN,
+input [63:0] fifo_q_bus, 
+input [3:0] GOT_FULL_MSG,
+input [3:0]SERIALIZER_BUSY,
+input [31:0] MSG_LEN_BUS,
 
 output reg SLOE,
 output reg SLWR,
-output RD_REQ,
-output reg MSG_SENT,
+output [3:0] RD_REQ,
+output reg [3:0] MSG_SENT,
 output reg SLRD,
 output reg [1:0] FIFOADR,
 output PKTEND,
-output ENA,
+output [3:0] ENA,
 
 output [2:0] state_monitor,
 output reg [7:0] payload_counter,
@@ -28,18 +28,39 @@ output [1:0] data_type_mon
 assign state_monitor = state;
 assign data_type_mon = data_type;
 assign FD = SLOE ? 16'hzzzz : data;
-assign ENA = SLRD && (data_type == payload);		// may be dangerous because this is async logic
+
+// demultiplexing ENA and RD_REQ. This code turns into latches that is not good
+//always@(*)
+//begin
+//ENA[payload_dest] <= SLRD && (data_type == payload);		// may be dangerous because this is async logic
+//RD_REQ[payload_dest] <= (data_type == payload) && SLWR;
+//end
+
+wire [15:0] fifo_q [3:0];
+wire [7:0] MSG_LEN [3:0];
+wire [3:0] decoder_out = (4'b1 << payload_dest);
+genvar i;
+generate
+for(i=0; i<4; i=i+1)
+	begin: wow
+	assign fifo_q[i] = fifo_q_bus[(16*i+15):(16*i)];
+	assign MSG_LEN[i] = MSG_LEN_BUS[(8*i+7):(8*i)];
+	// demultiplexing ENA and RD_REQ
+	assign ENA[i] = decoder_out[i] && (SLRD && (data_type == payload));		// simpliest demultiplexer = decoder + 4 ands. decoder implemented with leftshift
+	assign RD_REQ[i] = decoder_out[i] && ((data_type == payload) && SLWR);
+	end
+endgenerate
+
+
 
 reg [15:0] data;
 always@(*)
 case(data_type)
 prefix:	data = `PREFIX;
-src_len:	data = {8'h0,MSG_LEN};
-payload:	data = fifo_q;
+src_len:	data = {current_source,MSG_LEN[current_source]};
+payload:	data = fifo_q[current_source];
 default:	data = 0;
 endcase
-
-assign RD_REQ = (data_type == payload) && SLWR;
 
 reg [1:0] data_type;
 parameter [1:0] none		= 2'h0;
@@ -49,6 +70,7 @@ parameter [1:0] payload	= 2'h3;
 
 reg [7:0] payload_len;
 reg [7:0] payload_dest;
+reg [1:0] current_source;
 
 reg [2:0] state;
 parameter [2:0] idle						= 3'h0;
@@ -71,6 +93,7 @@ if(!RST)
 	payload_counter <= 0;
 	payload_len <= 0;
 	payload_dest <= 0;
+	current_source <= 0;
 	end
 else
 	case(state)
@@ -81,18 +104,23 @@ else
 			FIFOADR <= 2'b00;
 			state <= rd_state1;
 			end
-		else if(!FLAG_FULL && GOT_FULL_MSG)	// if we have some data for Slave FIFO
+		else if(!FLAG_FULL)	// if we have some data for Slave FIFO
 			begin
-			FIFOADR <= 2'b10;
-			state <= wr_state1;
-			data_type <= prefix;
+			if(GOT_FULL_MSG[current_source])
+				begin
+				FIFOADR <= 2'b10;
+				state <= wr_state1;
+				data_type <= prefix;
+				end
+			else
+				current_source <= current_source + 1'b1;
 			end
 		end
 	wr_state1:	// "0"
 		begin
 		if(!FLAG_FULL)
 			begin
-			if((data_type == prefix) || (data_type == src_len) || ((data_type == payload) && (payload_counter < MSG_LEN)))
+			if((data_type == prefix) || (data_type == src_len) || ((data_type == payload) && (payload_counter < MSG_LEN[current_source])))
 				begin
 				state <= wr_state2;
 				SLWR <= 1;
@@ -104,7 +132,7 @@ else
 				state <= timeout;
 				data_type <= none;
 				payload_counter <= 0;
-				MSG_SENT <= 1;
+				MSG_SENT[payload_dest] <= 1;
 				end
 			end
 		end
@@ -127,7 +155,7 @@ else
 		begin
 		if(!FLAG_EMPTY)
 			begin
-			if(!SERIALIZER_BUSY)
+			if(!SERIALIZER_BUSY[current_source])
 				begin
 				SLRD <= 1;
 				state <= rd_state3;
@@ -167,7 +195,7 @@ else
 		end
 	timeout:
 		begin
-		MSG_SENT <= 0;
+		MSG_SENT[payload_dest] <= 0;
 		if(payload_counter < 2)	// таймаут 2 такта
 				payload_counter <= payload_counter + 1'b1;
 			else
