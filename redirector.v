@@ -1,15 +1,17 @@
+`include "defines.v"
+
 module redirector(
 input CLK_IN,
 input RST,
 // SPI bus
-input [3:0] RX_CLK,
-input [3:0] RX_DATA,
-input [3:0] RX_LOAD,
-input [3:0] RX_STOP,
-output [3:0] TX_CLK,
-output [3:0] TX_DATA,
-output [3:0] TX_LOAD,
-output [3:0] TX_STOP,
+input [(`NUM_SPI-1):0] RX_CLK,
+input [(`NUM_SPI-1):0] RX_DATA,
+input [(`NUM_SPI-1):0] RX_LOAD,
+input [(`NUM_SPI-1):0] RX_STOP,
+output [(`NUM_SPI-1):0] TX_CLK,
+output [(`NUM_SPI-1):0] TX_DATA,
+output [(`NUM_SPI-1):0] TX_LOAD,
+output [(`NUM_SPI-1):0] TX_STOP,
 // cypress exchange pins
 input FLAG_EMPTY,	// FLAGA
 input FLAG_FULL,	// FLAGB
@@ -21,13 +23,11 @@ output [1:0] FIFOADR,
 output PKTEND,
 output IFCLK,
 // LEDs on front panel
-output [4:1] LEDS_BA,
+output [`NUM_SPI:1] LEDS_BA,
 output LED_REMOTE,
 // UART
-input UART0_RX,
-output UART0_TX,
-input UART1_RX,
-output UART1_TX,
+input [(`NUM_UART-1):0] UART_RX,
+output [(`NUM_UART-1):0] UART_TX,
 // I2C
 inout SDA,
 inout SCL,
@@ -45,14 +45,14 @@ wire ifclk;
 
 assign IFCLK = ifclk;
 
-wire [63:0] fifo_q;
-wire [3:0] got_full_msg;
-wire [31:0] msg_len;
-wire [3:0] serializer_busy;
+wire [(`NUM_SOURCES*16-1):0] fifo_q;
+wire [(`NUM_SOURCES-1):0] got_full_msg;
+wire [(`NUM_SOURCES*8-1):0] msg_len;
+wire [(`NUM_SOURCES-1):0] serializer_busy;
 
 genvar i;
 generate
-for(i=0; i<4; i=i+1)
+for(i=0; i<`NUM_SPI; i=i+1)
 	begin: wow
 	spi_process instance_name(
 	.RST(RST),
@@ -99,8 +99,8 @@ read_write_slave_fifo read_write_slave_fifo(
 .PKTEND(PKTEND),
 .ENA(cy_ena)
 );
-wire [3:0] rd_req;
-wire [3:0] msg_sent;
-wire [3:0] cy_ena;
+wire [(`NUM_SOURCES-1):0] rd_req;
+wire [(`NUM_SOURCES-1):0] msg_sent;
+wire [(`NUM_SOURCES-1):0] cy_ena;
 
 endmodule

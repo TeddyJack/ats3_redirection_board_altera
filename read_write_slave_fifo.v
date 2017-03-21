@@ -1,4 +1,4 @@
-`define PREFIX 16'h4444
+`include "defines.v"
 
 module read_write_slave_fifo(
 input CLK,
@@ -6,19 +6,19 @@ input RST,
 input FLAG_EMPTY,
 input FLAG_FULL,
 inout [15:0] FD,
-input [63:0] fifo_q_bus, 
-input [3:0] GOT_FULL_MSG,
-input [3:0]SERIALIZER_BUSY,
-input [31:0] MSG_LEN_BUS,
+input [(`NUM_SOURCES*16-1):0] fifo_q_bus, 
+input [(`NUM_SOURCES-1):0] GOT_FULL_MSG,
+input [(`NUM_SOURCES-1):0] SERIALIZER_BUSY,
+input [(`NUM_SOURCES*8-1):0] MSG_LEN_BUS,
 
 output reg SLOE,
 output reg SLWR,
-output [3:0] RD_REQ,
-output reg [3:0] MSG_SENT,
+output [(`NUM_SOURCES-1):0] RD_REQ,
+output reg [(`NUM_SOURCES-1):0] MSG_SENT,
 output reg SLRD,
 output reg [1:0] FIFOADR,
 output PKTEND,
-output [3:0] ENA,
+output [(`NUM_SOURCES-1):0] ENA,
 
 output [2:0] state_monitor,
 output reg [7:0] payload_counter,
@@ -36,12 +36,12 @@ assign FD = SLOE ? 16'hzzzz : data;
 //RD_REQ[payload_dest] <= (data_type == payload) && SLWR;
 //end
 
-wire [15:0] fifo_q [3:0];
-wire [7:0] MSG_LEN [3:0];
-wire [3:0] decoder_out = (4'b1 << payload_dest);
+wire [15:0] fifo_q [(`NUM_SOURCES-1):0];
+wire [7:0] MSG_LEN [(`NUM_SOURCES-1):0];
+wire [(`NUM_SOURCES-1):0] decoder_out = (`NUM_SOURCES'b1 << payload_dest);
 genvar i;
 generate
-for(i=0; i<4; i=i+1)
+for(i=0; i<`NUM_SOURCES; i=i+1)
 	begin: wow
 	assign fifo_q[i] = fifo_q_bus[(16*i+15):(16*i)];
 	assign MSG_LEN[i] = MSG_LEN_BUS[(8*i+7):(8*i)];
@@ -70,7 +70,7 @@ parameter [1:0] payload	= 2'h3;
 
 reg [7:0] payload_len;
 reg [7:0] payload_dest;
-reg [1:0] current_source;
+reg [($clog2(`NUM_SOURCES)-1):0] current_source;		// make sure that dimension calculated right
 
 reg [2:0] state;
 parameter [2:0] idle						= 3'h0;
