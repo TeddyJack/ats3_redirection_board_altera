@@ -28,6 +28,7 @@ output LED_REMOTE,
 // UART
 input [(`NUM_UART-1):0] UART_RX,
 output [(`NUM_UART-1):0] UART_TX,
+output UART_GND,
 // I2C
 inout SDA,
 inout SCL,
@@ -36,6 +37,7 @@ output [3:0] GPIO
 );
 
 assign TX_CLK = (~RX_CLK);
+assign UART_GND = 0;
 
 pll pll(
 .inclk0(CLK_IN),
@@ -49,6 +51,7 @@ wire [(`NUM_SOURCES*16-1):0] fifo_q;
 wire [(`NUM_SOURCES-1):0] got_full_msg;
 wire [(`NUM_SOURCES*8-1):0] msg_len;
 wire [(`NUM_SOURCES-1):0] serializer_busy;
+wire [(`NUM_SOURCES-1):0] parity_from_uart;
 
 genvar i;
 generate
@@ -77,6 +80,24 @@ for(i=0; i<`NUM_SPI; i=i+1)
 	.BUSY(serializer_busy[i])
 	);
 	end
+for(i=0; i<`NUM_UART; i=i+1)
+	begin: hoy
+	uart_process instance2_name(
+	.CLK(ifclk),
+	.RST(RST),
+	.RX(UART_RX[i]),
+	.TX(UART_TX[i]),
+	.DATA({FD[7:0],FD[15:8]}),
+	.ENA(cy_ena[`NUM_SPI+i]),
+	.GOT_FULL_MESSAGE(got_full_msg[`NUM_SPI+i]),
+	.BUSY(serializer_busy[`NUM_SPI+i]),
+	.FIFO_Q(fifo_q[(16*(`NUM_SPI+i)+15):(16*(`NUM_SPI+i))]),
+	.MSG_LEN(msg_len[(8*(`NUM_SPI+i)+7):(8*(`NUM_SPI+i))]),
+	.PARITY_OUT(parity_from_uart[`NUM_SPI+i]),
+	.MSG_LEN_IN(payload_len),
+	.PARITY_IN(parity_to_uart)
+	);
+	end
 endgenerate
 
 read_write_slave_fifo read_write_slave_fifo(
@@ -97,10 +118,16 @@ read_write_slave_fifo read_write_slave_fifo(
 .SLRD(SLRD),
 .FIFOADR(FIFOADR),
 .PKTEND(PKTEND),
-.ENA(cy_ena)
+.ENA(cy_ena),
+
+.PARITY_IN(parity_from_uart),
+.PARITY_OUT(parity_to_uart),
+.payload_len(payload_len)
 );
 wire [(`NUM_SOURCES-1):0] rd_req;
 wire [(`NUM_SOURCES-1):0] msg_sent;
 wire [(`NUM_SOURCES-1):0] cy_ena;
+wire [7:0] payload_len;
+wire parity_to_uart;
 
 endmodule

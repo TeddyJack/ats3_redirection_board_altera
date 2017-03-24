@@ -20,6 +20,10 @@ output reg [1:0] FIFOADR,
 output PKTEND,
 output [(`NUM_SOURCES-1):0] ENA,
 
+input [(`NUM_SOURCES-1):0] PARITY_IN,
+output reg PARITY_OUT,
+output reg [7:0] payload_len,
+
 output [2:0] state_monitor,
 output reg [7:0] payload_counter,
 output [1:0] data_type_mon
@@ -38,7 +42,8 @@ assign FD = SLOE ? 16'hzzzz : data;
 
 wire [15:0] fifo_q [(`NUM_SOURCES-1):0];
 wire [7:0] MSG_LEN [(`NUM_SOURCES-1):0];
-wire [(`NUM_SOURCES-1):0] decoder_out = (`NUM_SOURCES'b1 << payload_dest);
+wire [(`NUM_SOURCES-1):0] single_one = 1;
+wire [(`NUM_SOURCES-1):0] decoder_out = (single_one << payload_dest);
 genvar i;
 generate
 for(i=0; i<`NUM_SOURCES; i=i+1)
@@ -57,7 +62,12 @@ reg [15:0] data;
 always@(*)
 case(data_type)
 prefix:	data = `PREFIX;
-src_len:	data = {current_source,MSG_LEN[current_source]};
+src_len:	begin
+			data[15:13]	= 0;
+			data[12]		= PARITY_IN[current_source];
+			data[11:8]	= current_source;
+			data[7:0]	= MSG_LEN[current_source];
+			end
 payload:	data = fifo_q[current_source];
 default:	data = 0;
 endcase
@@ -68,8 +78,7 @@ parameter [1:0] prefix	= 2'h1;
 parameter [1:0] src_len	= 2'h2;
 parameter [1:0] payload	= 2'h3;
 
-reg [7:0] payload_len;
-reg [7:0] payload_dest;
+reg [3:0] payload_dest;
 reg [($clog2(`NUM_SOURCES)-1):0] current_source;		// make sure that dimension calculated right
 
 reg [2:0] state;
@@ -94,6 +103,7 @@ if(!RST)
 	payload_len <= 0;
 	payload_dest <= 0;
 	current_source <= 0;
+	PARITY_OUT <= 0;
 	end
 else
 	case(state)
@@ -132,7 +142,7 @@ else
 				state <= timeout;
 				data_type <= none;
 				payload_counter <= 0;
-				MSG_SENT[payload_dest] <= 1;
+				MSG_SENT[current_source] <= 1;
 				end
 			end
 		end
@@ -155,7 +165,7 @@ else
 		begin
 		if(!FLAG_EMPTY)
 			begin
-			if(!SERIALIZER_BUSY[current_source])
+			if(!SERIALIZER_BUSY[payload_dest])
 				begin
 				SLRD <= 1;
 				state <= rd_state3;
@@ -179,7 +189,8 @@ else
 		else if(data_type == src_len)
 			begin
 			data_type <= payload;
-			payload_dest <= FD[15:8];
+			PARITY_OUT <= FD[12];
+			payload_dest <= FD[11:8];
 			payload_len <= FD[7:0];
 			end
 		else if(data_type == payload)
@@ -195,7 +206,7 @@ else
 		end
 	timeout:
 		begin
-		MSG_SENT[payload_dest] <= 0;
+		MSG_SENT[current_source] <= 0;
 		if(payload_counter < 2)	// таймаут 2 такта
 				payload_counter <= payload_counter + 1'b1;
 			else
