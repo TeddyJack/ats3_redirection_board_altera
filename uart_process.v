@@ -5,16 +5,19 @@ input CLK,
 input RST,
 input RX,
 output TX,
+
 input [15:0] DATA,
 input ENA,
-output GOT_FULL_MESSAGE,
+input [7:0] MSG_LEN_IN,
+input PARITY_IN,
 output BUSY,
+
+input RD_REQ,
+input RD_REQ_LEN,
 output [15:0] FIFO_Q,
 output [7:0] MSG_LEN,
 output PARITY_OUT,
-
-input [7:0] MSG_LEN_IN,
-input PARITY_IN
+output GOT_FULL_MESSAGE
 );
 
 uart uart(
@@ -25,15 +28,17 @@ uart uart(
 .input_axis_tvalid(tx_valid),		// I make it
 .input_axis_tready(tx_ready),
 // AXI output
-.output_axis_tdata(/*rx_data*/),
-.output_axis_tvalid(/*rx_valid*/),
-.output_axis_tready(/*rx_ready*/),	// I make it
+.output_axis_tdata(rx_data),
+.output_axis_tvalid(rx_valid),
+.output_axis_tready(rx_ready),	// I make it
 // UART interface
 .rxd(RX),
 .txd(TX),
 // Configuration
 .prescale(prescale[15:0])
 );
+wire [7:0] rx_data;
+wire rx_valid;
 wire tx_ready;
 wire [31:0] prescale = `F_clk/(115200*8);	// = fclk / (baud * 8)
 
@@ -51,6 +56,21 @@ output_process_uart output_process_uart(
 );
 wire [7:0] tx_data;
 wire tx_valid;
+
+input_process_uart input_process_uart(
+.CLK(CLK),
+.RST(RST),
+.rx_ready(rx_ready),
+.rx_data(rx_data),
+.rx_valid(rx_valid),
+.RD_REQ(RD_REQ),
+.RD_REQ_LEN(RD_REQ_LEN),
+.FIFO_Q(FIFO_Q),
+.MSG_LEN(MSG_LEN),
+.PARITY_OUT(PARITY_OUT),
+.GOT_FULL_MESSAGE(GOT_FULL_MESSAGE)
+);
+wire rx_ready;
 
 
 endmodule
