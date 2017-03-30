@@ -17,7 +17,7 @@ output [(`NUM_SOURCES-1):0] RD_REQ,
 output reg [(`NUM_SOURCES-1):0] MSG_SENT,
 output reg SLRD,
 output reg [1:0] FIFOADR,
-output PKTEND,
+output reg PKTEND,
 output [(`NUM_SOURCES-1):0] ENA,
 
 input [(`NUM_SOURCES-1):0] PARITY_IN,
@@ -32,13 +32,6 @@ output [1:0] data_type_mon
 assign state_monitor = state;
 assign data_type_mon = data_type;
 assign FD = SLOE ? 16'hzzzz : data;
-
-// demultiplexing ENA and RD_REQ. This code turns into latches that is not good
-//always@(*)
-//begin
-//ENA[payload_dest] <= SLRD && (data_type == payload);		// may be dangerous because this is async logic
-//RD_REQ[payload_dest] <= (data_type == payload) && SLWR;
-//end
 
 wire [15:0] fifo_q [(`NUM_SOURCES-1):0];
 wire [7:0] MSG_LEN [(`NUM_SOURCES-1):0];
@@ -104,11 +97,13 @@ if(!RST)
 	payload_dest <= 0;
 	current_source <= 0;
 	PARITY_OUT <= 0;
+	PKTEND <= 0;
 	end
 else
 	case(state)
 	idle:
 		begin
+		PKTEND <= 0;		// debugging reasons
 		if(!FLAG_EMPTY)		// if Slave FIFO has some data for us
 			begin
 			FIFOADR <= 2'b00;
@@ -213,6 +208,7 @@ else
 				begin
 				state <= idle;
 				payload_counter <= 0;
+				PKTEND <= 1;	// debugging reasons
 				end
 		end
 	endcase

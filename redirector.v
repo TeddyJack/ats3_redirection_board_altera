@@ -45,7 +45,7 @@ pll pll(
 );
 wire ifclk;
 
-assign IFCLK = ifclk;
+assign IFCLK = !ifclk;
 
 wire [(`NUM_SOURCES*16-1):0] fifo_q;
 wire [(`NUM_SOURCES-1):0] got_full_msg;
@@ -89,13 +89,14 @@ for(i=0; i<`NUM_UART; i=i+1)
 	.TX(UART_TX[i]),
 	.DATA({FD[7:0],FD[15:8]}),
 	.ENA(cy_ena[`NUM_SPI+i]),
-	.GOT_FULL_MESSAGE(got_full_msg[`NUM_SPI+i]),
+	.MSG_LEN_IN(payload_len),
+	.PARITY_IN(parity_to_uart),
 	.BUSY(serializer_busy[`NUM_SPI+i]),
+	.RD_REQ(rd_req[i]),
 	.FIFO_Q(fifo_q[(16*(`NUM_SPI+i)+15):(16*(`NUM_SPI+i))]),
 	.MSG_LEN(msg_len[(8*(`NUM_SPI+i)+7):(8*(`NUM_SPI+i))]),
 	.PARITY_OUT(parity_from_uart[`NUM_SPI+i]),
-	.MSG_LEN_IN(payload_len),
-	.PARITY_IN(parity_to_uart)
+	.GOT_FULL_MESSAGE(got_full_msg[`NUM_SPI+i])
 	);
 	end
 endgenerate

@@ -6,6 +6,7 @@ for {set i 0} {$i < $NUM_SPI} {incr i} {
 	create_clock -period 125MHz [get_ports RX_CLK[$i]]
 }
 
+derive_pll_clocks
+
 derive_clock_uncertainty
 
-derive_pll_clocks

@@ -34,12 +34,15 @@ uart uart(
 // UART interface
 .rxd(RX),
 .txd(TX),
+// Status
+.rx_busy(rx_busy),
 // Configuration
 .prescale(prescale[15:0])
 );
 wire [7:0] rx_data;
 wire rx_valid;
 wire tx_ready;
+wire rx_busy;
 wire [31:0] prescale = `F_clk/(115200*8);	// = fclk / (baud * 8)
 
 output_process_uart output_process_uart(
@@ -63,6 +66,7 @@ input_process_uart input_process_uart(
 .rx_ready(rx_ready),
 .rx_data(rx_data),
 .rx_valid(rx_valid),
+.rx_busy(rx_busy),
 .RD_REQ(RD_REQ),
 .RD_REQ_LEN(RD_REQ_LEN),
 .FIFO_Q(FIFO_Q),
