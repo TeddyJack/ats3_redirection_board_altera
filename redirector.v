@@ -92,7 +92,7 @@ for(i=0; i<`NUM_UART; i=i+1)
 	.MSG_LEN_IN(payload_len),
 	.PARITY_IN(parity_to_uart),
 	.BUSY(serializer_busy[`NUM_SPI+i]),
-	.RD_REQ(rd_req[i]),
+	.RD_REQ(rd_req[`NUM_SPI+i]),
 	.FIFO_Q(fifo_q[(16*(`NUM_SPI+i)+15):(16*(`NUM_SPI+i))]),
 	.MSG_LEN(msg_len[(8*(`NUM_SPI+i)+7):(8*(`NUM_SPI+i))]),
 	.PARITY_OUT(parity_from_uart[`NUM_SPI+i]),

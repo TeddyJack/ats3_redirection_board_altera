@@ -36,7 +36,7 @@ assign FD = SLOE ? 16'hzzzz : data;
 wire [15:0] fifo_q [(`NUM_SOURCES-1):0];
 wire [7:0] MSG_LEN [(`NUM_SOURCES-1):0];
 wire [(`NUM_SOURCES-1):0] single_one = 1;
-wire [(`NUM_SOURCES-1):0] decoder_out = (single_one << payload_dest);
+wire [(`NUM_SOURCES-1):0] decoder_out = (single_one << current_source);
 genvar i;
 generate
 for(i=0; i<`NUM_SOURCES; i=i+1)
@@ -71,7 +71,6 @@ parameter [1:0] prefix	= 2'h1;
 parameter [1:0] src_len	= 2'h2;
 parameter [1:0] payload	= 2'h3;
 
-reg [3:0] payload_dest;
 reg [($clog2(`NUM_SOURCES)-1):0] current_source;		// make sure that dimension calculated right
 
 reg [2:0] state;
@@ -94,16 +93,13 @@ if(!RST)
 	data_type <= none;
 	payload_counter <= 0;
 	payload_len <= 0;
-	payload_dest <= 0;
 	current_source <= 0;
 	PARITY_OUT <= 0;
-	PKTEND <= 0;
 	end
 else
 	case(state)
 	idle:
 		begin
-		PKTEND <= 0;		// debugging reasons
 		if(!FLAG_EMPTY)		// if Slave FIFO has some data for us
 			begin
 			FIFOADR <= 2'b00;
@@ -160,7 +156,7 @@ else
 		begin
 		if(!FLAG_EMPTY)
 			begin
-			if(!SERIALIZER_BUSY[payload_dest])
+			if(!SERIALIZER_BUSY[current_source])
 				begin
 				SLRD <= 1;
 				state <= rd_state3;
@@ -185,7 +181,7 @@ else
 			begin
 			data_type <= payload;
 			PARITY_OUT <= FD[12];
-			payload_dest <= FD[11:8];
+			current_source <= FD[11:8];
 			payload_len <= FD[7:0];
 			end
 		else if(data_type == payload)
@@ -208,10 +204,43 @@ else
 				begin
 				state <= idle;
 				payload_counter <= 0;
-				PKTEND <= 1;	// debugging reasons
 				end
 		end
 	endcase
 end
+
+// PKTEND machine
+reg [7:0] words_in_page;
+reg [31:0] time_counter;
+always@(posedge CLK or negedge RST)
+begin
+if(!RST)
+	begin
+	words_in_page <= 0;
+	time_counter <= 0;
+	PKTEND <= 0;
+	end
+else
+	begin
+	if((SLWR && (words_in_page == 8'd255)) || ((time_counter == `PKTEND_LIMIT) && (state == idle)))
+		time_counter <= 0;
+	else if(time_counter < `PKTEND_LIMIT)
+		time_counter <= time_counter + 1'b1;
+	
+	if((time_counter == `PKTEND_LIMIT) && (state == idle))
+		begin
+		if(words_in_page)
+			PKTEND <= 1;
+		words_in_page <= 0;
+		end
+	else
+		begin
+		PKTEND <= 0;
+		if(SLWR)
+			words_in_page <= words_in_page + 1'b1;
+		end
+	end
+end
+
 
 endmodule
