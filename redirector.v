@@ -66,7 +66,7 @@ for(i=0; i<`NUM_SPI; i=i+1)
 	.RX_STOP(RX_STOP[i]),
 	
 	.RD_REQ(rd_req[i]),
-	.RD_REQ_LEN(msg_sent[i]),
+	.RD_REQ_LEN(msg_start[i]),	// temporary until mechanism is redone
 	.FIFO_Q(fifo_q[(16*i+15):(16*i)]),
 	.GOT_FULL_MSG(got_full_msg[i]),
 	.msg_len_out(msg_len[(8*i+7):(8*i)]),
@@ -93,6 +93,7 @@ for(i=0; i<`NUM_UART; i=i+1)
 	.PARITY_IN(parity_to_uart),
 	.BUSY(serializer_busy[`NUM_SPI+i]),
 	.RD_REQ(rd_req[`NUM_SPI+i]),
+	.MSG_START(msg_start[`NUM_SPI+i]),
 	.FIFO_Q(fifo_q[(16*(`NUM_SPI+i)+15):(16*(`NUM_SPI+i))]),
 	.MSG_LEN(msg_len[(8*(`NUM_SPI+i)+7):(8*(`NUM_SPI+i))]),
 	.PARITY_OUT(parity_from_uart[`NUM_SPI+i]),
@@ -115,7 +116,7 @@ read_write_slave_fifo read_write_slave_fifo(
 .SLOE(SLOE),
 .SLWR(SLWR),
 .RD_REQ(rd_req),
-.MSG_SENT(msg_sent),
+.MSG_START(msg_start),
 .SLRD(SLRD),
 .FIFOADR(FIFOADR),
 .PKTEND(PKTEND),
@@ -126,7 +127,7 @@ read_write_slave_fifo read_write_slave_fifo(
 .payload_len(payload_len)
 );
 wire [(`NUM_SOURCES-1):0] rd_req;
-wire [(`NUM_SOURCES-1):0] msg_sent;
+wire [(`NUM_SOURCES-1):0] msg_start;
 wire [(`NUM_SOURCES-1):0] cy_ena;
 wire [7:0] payload_len;
 wire parity_to_uart;

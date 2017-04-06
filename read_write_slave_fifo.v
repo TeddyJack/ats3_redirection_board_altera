@@ -14,7 +14,7 @@ input [(`NUM_SOURCES*8-1):0] MSG_LEN_BUS,
 output reg SLOE,
 output reg SLWR,
 output [(`NUM_SOURCES-1):0] RD_REQ,
-output reg [(`NUM_SOURCES-1):0] MSG_SENT,
+output reg [(`NUM_SOURCES-1):0] MSG_START,
 output reg SLRD,
 output reg [1:0] FIFOADR,
 output reg PKTEND,
@@ -72,6 +72,7 @@ parameter [1:0] src_len	= 2'h2;
 parameter [1:0] payload	= 2'h3;
 
 reg [($clog2(`NUM_SOURCES)-1):0] current_source;		// make sure that dimension calculated right
+reg [(`NUM_SOURCES-1):0] MSG_SENT;
 
 reg [2:0] state;
 parameter [2:0] idle						= 3'h0;
@@ -95,6 +96,8 @@ if(!RST)
 	payload_len <= 0;
 	current_source <= 0;
 	PARITY_OUT <= 0;
+	MSG_SENT <= 0;
+	MSG_START <= 0;
 	end
 else
 	case(state)
@@ -127,6 +130,8 @@ else
 				SLWR <= 1;
 				if(data_type == payload)
 					payload_counter <= payload_counter + 1'b1;
+				if(data_type == prefix)
+					MSG_START[current_source] <= 1;
 				end
 			else
 				begin
@@ -139,6 +144,7 @@ else
 		end
 	wr_state2:	// "1"
 		begin
+		MSG_START[current_source] <= 0;
 		SLWR <= 0;
 		state <= wr_state1;
 		if(data_type == prefix)

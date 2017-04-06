@@ -13,7 +13,7 @@ input PARITY_IN,
 output BUSY,
 
 input RD_REQ,
-input RD_REQ_LEN,
+input MSG_START,
 output [15:0] FIFO_Q,
 output [7:0] MSG_LEN,
 output PARITY_OUT,
@@ -34,15 +34,12 @@ uart uart(
 // UART interface
 .rxd(RX),
 .txd(TX),
-// Status
-.rx_busy(rx_busy),
 // Configuration
 .prescale(prescale[15:0])
 );
 wire [7:0] rx_data;
 wire rx_valid;
 wire tx_ready;
-wire rx_busy;
 wire [31:0] prescale = `F_clk/(115200*8);	// = fclk / (baud * 8)
 
 output_process_uart output_process_uart(
@@ -66,9 +63,8 @@ input_process_uart input_process_uart(
 .rx_ready(rx_ready),
 .rx_data(rx_data),
 .rx_valid(rx_valid),
-.rx_busy(rx_busy),
 .RD_REQ(RD_REQ),
-.RD_REQ_LEN(RD_REQ_LEN),
+.MSG_START(MSG_START),
 .FIFO_Q(FIFO_Q),
 .MSG_LEN(MSG_LEN),
 .PARITY_OUT(PARITY_OUT),
