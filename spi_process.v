@@ -7,11 +7,11 @@ input RX_LOAD,
 input RX_STOP,
 
 input RD_REQ,
-input RD_REQ_LEN,
+input MSG_START,
 output [15:0] FIFO_Q,
 output GOT_FULL_MSG,
 
-output [7:0] msg_len_out,
+output [7:0] MSG_LEN,
 
 output TX_DATA,
 output TX_LOAD,
@@ -28,13 +28,13 @@ input_process_spi input_process_spi(
 .RX_CLK(RX_CLK),
 .RX_DATA(RX_DATA),
 .RX_LOAD(RX_LOAD),
-.RX_STOP(RX_STOP),
+.TX_STOP(TX_STOP),
 
 .RD_REQ(RD_REQ),
-.RD_REQ_LEN(RD_REQ_LEN),
+.MSG_START(MSG_START),
 .FIFO_Q(FIFO_Q),
 .GOT_FULL_MSG(GOT_FULL_MSG),
-.msg_len_out(msg_len_out)
+.MSG_LEN(MSG_LEN)
 );
 
 output_process_spi output_process_spi(
@@ -42,7 +42,7 @@ output_process_spi output_process_spi(
 .RX_CLK(RX_CLK),
 .TX_DATA(TX_DATA),
 .TX_LOAD(TX_LOAD),
-.TX_STOP(TX_STOP),
+.RX_STOP(RX_STOP),
 
 .DATA(DATA),
 .ENA(ENA),

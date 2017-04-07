@@ -4,23 +4,21 @@ input SYS_CLK,
 input RX_CLK,
 input RX_DATA,
 input RX_LOAD,
-input RX_STOP,
+output TX_STOP,
 
 input RD_REQ,
-input RD_REQ_LEN,
+input MSG_START,
 output [15:0] FIFO_Q,
-output GOT_FULL_MSG,
+output reg GOT_FULL_MSG,
 
-output [7:0] msg_len_out
+output reg [7:0] MSG_LEN
 );
-assign GOT_FULL_MSG = !len_fifo_empty;
 
 deserializer deserializer(
 .RST(RST),
 .RX_CLK(RX_CLK),
 .RX_DATA(RX_DATA),
 .RX_LOAD(RX_LOAD),
-.RX_STOP(RX_STOP),
 
 .P_ADDR(p_addr),
 .P_DATA(p_data),
@@ -30,46 +28,54 @@ wire [2:0] p_addr;
 wire [15:0] p_data;
 wire p_ena;
 
-capacity_check capacity_check(
-.RST(RST),
-.RX_CLK(RX_CLK),
-.P_DATA_IN(p_data),
-.P_ENA_IN(p_ena),
-.USED(used),
-
-.P_DATA_OUT(p_data_out),
-.P_ENA_OUT(p_ena_out),
-.MSG_LEN(msg_len),
-.WR_REQ_LEN(wr_req_len)
-);
-wire [15:0] p_data_out;
-wire p_ena_out;
-wire [7:0] msg_len;
-wire wr_req_len;
-
 in_fifo_spi in_fifo_spi(
 .aclr(!RST),
-.data(p_data_out),
+.data(p_data),
 .rdclk(SYS_CLK),
 .rdreq(RD_REQ),
 .wrclk(RX_CLK),
-.wrreq(p_ena_out),
+.wrreq(p_ena),
 .q(FIFO_Q),
-.wrusedw(used)
+.rdusedw(used),
+.wrfull(TX_STOP)
 );
-wire [8:0] used;
+wire [9:0] used;
 
-fifo_with_lengths fifo_with_lengths(
-.aclr(!RST),
-.data(msg_len),
-.rdclk(SYS_CLK),
-.rdreq(RD_REQ_LEN),
-.wrclk(RX_CLK),
-.wrreq(wr_req_len),
-.q(msg_len_out),
-.rdempty(len_fifo_empty)
-);
-
-wire len_fifo_empty;
+// нижеприведённая state machine идентична машине в input process uart за исключением PARITY бита
+reg [31:0] timer;
+always@(posedge SYS_CLK or negedge RST)
+begin
+if(!RST)
+	begin
+	GOT_FULL_MSG <= 0;
+	MSG_LEN <= 0;
+	timer <= 0;
+	end
+else
+	begin
+	if(RD_REQ)
+		GOT_FULL_MSG <= 0;
+	else if(((timer == `GFM_LIMIT) && (used > 0)) || (used == `SPI_WORDS))
+		GOT_FULL_MSG <= 1;
+	////
+	if(RD_REQ)		// здесь может быть MSG_SENT, тогда возможно счётчик будет отсчитывать точнее
+		timer <= 0;
+	else
+		begin
+		if(timer < `GFM_LIMIT)
+			timer <= timer + 1'b1;
+		else
+			begin
+			if(used == 0)
+				timer <= 0;
+			end
+		end
+	/////
+	if(MSG_START)
+		begin
+		MSG_LEN <= {8{used[8]}} | used[7:0];		// if (used > 255) (MSG_LEN <= 255) else (MSG_LEN <= used);
+		end													// because length field in msg header is 8 bits wide. No need to make it wider
+	end
+end
 
 endmodule

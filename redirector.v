@@ -66,10 +66,10 @@ for(i=0; i<`NUM_SPI; i=i+1)
 	.RX_STOP(RX_STOP[i]),
 	
 	.RD_REQ(rd_req[i]),
-	.RD_REQ_LEN(msg_start[i]),	// temporary until mechanism is redone
+	.MSG_START(msg_start[i]),
 	.FIFO_Q(fifo_q[(16*i+15):(16*i)]),
 	.GOT_FULL_MSG(got_full_msg[i]),
-	.msg_len_out(msg_len[(8*i+7):(8*i)]),
+	.MSG_LEN(msg_len[(8*i+7):(8*i)]),
 	
 	.TX_DATA(TX_DATA[i]),
 	.TX_LOAD(TX_LOAD[i]),

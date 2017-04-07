@@ -4,8 +4,8 @@
 `define F_clk			48000000		// Make sure that in PLL the same value
 `define PKTEND_PERIOD	1000		// in ms
 `define GFM_PERIOD		250		// in ms (GFM = got full message), time period of triggering GOT_FULL_MESSAGE if input FIFO is not full enough
-`define UART_WORDS		16			// how many words used in FIFO to trigger GOT_FULL_MESSAGE
-`define SPI_WORDS			128
+`define UART_WORDS		32			// how many words used in FIFO to trigger GOT_FULL_MESSAGE
+`define SPI_WORDS			256
 
 
 // calculated values based on defines

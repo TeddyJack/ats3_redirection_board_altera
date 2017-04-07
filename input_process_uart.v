@@ -29,7 +29,7 @@ wire [6:0] rd_used;
 wire fifo_full;
 wire [7:0] wr_used;
 
-
+// wr_used[0] - is a plain indicator of odd number of bytes in FIFO
 wire wr_req_stuff = MSG_START & wr_used[0] & (!rx_valid);	// stuffing byte if we have odd number of bytes in FIFO
 reg [31:0] timer;
 
@@ -64,11 +64,14 @@ else
 	/////
 	if(MSG_START)
 		begin
-		MSG_LEN <= rd_used + wr_used[0];
+		//MSG_LEN <= rd_used + wr_used[0];			// simple variant if FIFO is small, and rd_used never exceeds 256
+		MSG_LEN <= {8{used[8]}} | used[7:0];		// complex variant for FIFO more than 256 words (each of 2 bytes). Versatile. Also that makes this state_machine similar to state_machine in input_process_spi module
 		PARITY_OUT <= wr_used[0] & (!rx_valid);
 		end
 	end
 end
+
+wire [8:0] used = rd_used + wr_used[0];			// if odd bytes then stuffing is applied, so (used + 1). Don't try to understand, it just works.
 
 
 endmodule

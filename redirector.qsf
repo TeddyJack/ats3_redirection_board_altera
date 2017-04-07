@@ -83,7 +83,6 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FD[14]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SLWR
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to SLRD
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDS_BA[2]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDS_BA[3]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FD[13]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FD[12]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to FD[11]
@@ -107,7 +106,6 @@ set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to GPIO[0]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to IFCLK
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDS_BA[4]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LEDS_BA[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to LED_REMOTE
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to PKTEND
@@ -122,16 +120,12 @@ set_global_assignment -name VERILOG_FILE input_process_spi.v
 set_global_assignment -name VERILOG_FILE serializer.v
 set_global_assignment -name VERILOG_FILE output_process_spi.v
 set_instance_assignment -name WEAK_PULL_UP_RESISTOR ON -to RST
-set_global_assignment -name QIP_FILE out_fifo_spi.qip
-set_global_assignment -name QIP_FILE fifo_with_lengths.qip
 set_location_assignment PIN_N14 -to IFCLK
 set_location_assignment PIN_L13 -to SLRD
 set_location_assignment PIN_M10 -to SLWR
 set_location_assignment PIN_R11 -to PKTEND
 set_location_assignment PIN_T12 -to SLOE
 set_location_assignment PIN_J16 -to RST
-set_global_assignment -name VERILOG_FILE capacity_check.v
-set_global_assignment -name QIP_FILE three_words_fifo.qip
 set_global_assignment -name EDA_SIMULATION_TOOL "<None>"
 set_global_assignment -name EDA_TIME_SCALE "1 ps" -section_id eda_simulation
 set_global_assignment -name EDA_OUTPUT_DATA_FORMAT NONE -section_id eda_simulation
@@ -153,36 +147,20 @@ set_global_assignment -name VERILOG_FILE uart_rx.v
 set_global_assignment -name VERILOG_FILE uart_tx.v
 set_location_assignment PIN_F14 -to UART_RX[0]
 set_location_assignment PIN_G15 -to UART_TX[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_CLK[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_CLK[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_CLK[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_CLK[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_DATA[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_DATA[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_DATA[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_DATA[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_LOAD[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_LOAD[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_LOAD[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_LOAD[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_STOP[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_STOP[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_STOP[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to RX_STOP[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_CLK[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_CLK[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_CLK[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_CLK[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_DATA[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_DATA[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_DATA[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_DATA[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_LOAD[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_LOAD[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_LOAD[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_LOAD[0]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_STOP[3]
-set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_STOP[2]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_STOP[1]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to TX_STOP[0]
 set_instance_assignment -name IO_STANDARD "3.3-V LVTTL" -to UART_GND
