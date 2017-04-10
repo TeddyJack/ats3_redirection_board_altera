@@ -44,6 +44,7 @@ module in_fifo_spi (
 	wrclk,
 	wrreq,
 	q,
+	rdfull,
 	rdusedw,
 	wrfull);
 
@@ -54,6 +55,7 @@ module in_fifo_spi (
 	input	  wrclk;
 	input	  wrreq;
 	output	[15:0]  q;
+	output	  rdfull;
 	output	[9:0]  rdusedw;
 	output	  wrfull;
 `ifndef ALTERA_RESERVED_QIS
@@ -66,10 +68,12 @@ module in_fifo_spi (
 
 	wire  sub_wire0;
 	wire [15:0] sub_wire1;
-	wire [9:0] sub_wire2;
+	wire  sub_wire2;
+	wire [9:0] sub_wire3;
 	wire  wrfull = sub_wire0;
 	wire [15:0] q = sub_wire1[15:0];
-	wire [9:0] rdusedw = sub_wire2[9:0];
+	wire  rdfull = sub_wire2;
+	wire [9:0] rdusedw = sub_wire3[9:0];
 
 	dcfifo	dcfifo_component (
 				.rdclk (rdclk),
@@ -80,9 +84,9 @@ module in_fifo_spi (
 				.rdreq (rdreq),
 				.wrfull (sub_wire0),
 				.q (sub_wire1),
-				.rdusedw (sub_wire2),
+				.rdfull (sub_wire2),
+				.rdusedw (sub_wire3),
 				.rdempty (),
-				.rdfull (),
 				.wrempty (),
 				.wrusedw ());
 	defparam
@@ -131,7 +135,7 @@ endmodule
 // Retrieval info: PRIVATE: msb_usedw NUMERIC "0"
 // Retrieval info: PRIVATE: output_width NUMERIC "16"
 // Retrieval info: PRIVATE: rsEmpty NUMERIC "0"
-// Retrieval info: PRIVATE: rsFull NUMERIC "0"
+// Retrieval info: PRIVATE: rsFull NUMERIC "1"
 // Retrieval info: PRIVATE: rsUsedW NUMERIC "1"
 // Retrieval info: PRIVATE: sc_aclr NUMERIC "0"
 // Retrieval info: PRIVATE: sc_sclr NUMERIC "0"
@@ -156,6 +160,7 @@ endmodule
 // Retrieval info: USED_PORT: data 0 0 16 0 INPUT NODEFVAL "data[15..0]"
 // Retrieval info: USED_PORT: q 0 0 16 0 OUTPUT NODEFVAL "q[15..0]"
 // Retrieval info: USED_PORT: rdclk 0 0 0 0 INPUT NODEFVAL "rdclk"
+// Retrieval info: USED_PORT: rdfull 0 0 0 0 OUTPUT NODEFVAL "rdfull"
 // Retrieval info: USED_PORT: rdreq 0 0 0 0 INPUT NODEFVAL "rdreq"
 // Retrieval info: USED_PORT: rdusedw 0 0 10 0 OUTPUT NODEFVAL "rdusedw[9..0]"
 // Retrieval info: USED_PORT: wrclk 0 0 0 0 INPUT NODEFVAL "wrclk"
@@ -168,6 +173,7 @@ endmodule
 // Retrieval info: CONNECT: @wrclk 0 0 0 0 wrclk 0 0 0 0
 // Retrieval info: CONNECT: @wrreq 0 0 0 0 wrreq 0 0 0 0
 // Retrieval info: CONNECT: q 0 0 16 0 @q 0 0 16 0
+// Retrieval info: CONNECT: rdfull 0 0 0 0 @rdfull 0 0 0 0
 // Retrieval info: CONNECT: rdusedw 0 0 10 0 @rdusedw 0 0 10 0
 // Retrieval info: CONNECT: wrfull 0 0 0 0 @wrfull 0 0 0 0
 // Retrieval info: GEN_FILE: TYPE_NORMAL in_fifo_spi.v TRUE

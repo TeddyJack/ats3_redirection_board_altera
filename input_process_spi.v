@@ -14,6 +14,8 @@ output reg GOT_FULL_MSG,
 output reg [7:0] MSG_LEN
 );
 
+assign TX_STOP = wr_full;
+
 deserializer deserializer(
 .RST(RST),
 .RX_CLK(RX_CLK),
@@ -36,10 +38,13 @@ in_fifo_spi in_fifo_spi(
 .wrclk(RX_CLK),
 .wrreq(p_ena),
 .q(FIFO_Q),
+.rdfull(rd_full),
 .rdusedw(used),
-.wrfull(TX_STOP)
+.wrfull(wr_full)
 );
 wire [9:0] used;
+wire rd_full;
+wire wr_full;
 
 // нижеприведённая state machine идентична машине в input process uart за исключением PARITY бита
 reg [31:0] timer;
@@ -55,7 +60,7 @@ else
 	begin
 	if(RD_REQ)
 		GOT_FULL_MSG <= 0;
-	else if(((timer == `GFM_LIMIT) && (used > 0)) || (used == `SPI_WORDS))
+	else if(((timer == `GFM_LIMIT) && ((used > 0) || (rd_full))) || (used == `SPI_WORDS))
 		GOT_FULL_MSG <= 1;
 	////
 	if(RD_REQ)		// здесь может быть MSG_SENT, тогда возможно счётчик будет отсчитывать точнее
@@ -66,15 +71,18 @@ else
 			timer <= timer + 1'b1;
 		else
 			begin
-			if(used == 0)
+			if((used == 0) && (!rd_full))
 				timer <= 0;
 			end
 		end
 	/////
 	if(MSG_START)
 		begin
-		MSG_LEN <= {8{used[8]}} | used[7:0];		// if (used > 255) (MSG_LEN <= 255) else (MSG_LEN <= used);
-		end													// because length field in msg header is 8 bits wide. No need to make it wider
+		if((used > 8'd254) || rd_full)						// because length field in msg header is 8 bits wide. No need to make it wider
+			MSG_LEN <= 8'd254;
+		else
+			MSG_LEN <= used;
+		end
 	end
 end
 

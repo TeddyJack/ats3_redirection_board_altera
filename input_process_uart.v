@@ -12,7 +12,7 @@ output reg [7:0] MSG_LEN,
 output reg PARITY_OUT,
 output reg GOT_FULL_MESSAGE
 );
-assign rx_ready = !fifo_full;
+assign rx_ready = !wr_full;
 
 uart_fifo uart_fifo(
 .data(rx_data),
@@ -21,12 +21,14 @@ uart_fifo uart_fifo(
 .wrclk(CLK),
 .wrreq(rx_valid | wr_req_stuff),
 .q({FIFO_Q[7:0],FIFO_Q[15:8]}),
+.rdfull(rd_full),
 .rdusedw(rd_used),
-.wrfull(fifo_full),
+.wrfull(wr_full),
 .wrusedw(wr_used)
 );
+wire rd_full;
 wire [6:0] rd_used;
-wire fifo_full;
+wire wr_full;
 wire [7:0] wr_used;
 
 // wr_used[0] - is a plain indicator of odd number of bytes in FIFO
@@ -46,7 +48,7 @@ else
 	begin
 	if(RD_REQ)
 		GOT_FULL_MESSAGE <= 0;
-	else if(((timer == `GFM_LIMIT) && (wr_used > 0)) || (rd_used == `UART_WORDS))
+	else if(((timer == `GFM_LIMIT) && ((wr_used > 0) || (rd_full))) || (rd_used == `UART_WORDS))
 		GOT_FULL_MESSAGE <= 1;
 	////
 	if(RD_REQ)		// здесь может быть MSG_SENT
@@ -57,7 +59,7 @@ else
 			timer <= timer + 1'b1;
 		else
 			begin
-			if(wr_used == 0)
+			if((wr_used == 0) && (!rd_full))
 				timer <= 0;
 			end
 		end
@@ -65,7 +67,10 @@ else
 	if(MSG_START)
 		begin
 		//MSG_LEN <= rd_used + wr_used[0];			// simple variant if FIFO is small, and rd_used never exceeds 256
-		MSG_LEN <= {8{used[8]}} | used[7:0];		// complex variant for FIFO more than 256 words (each of 2 bytes). Versatile. Also that makes this state_machine similar to state_machine in input_process_spi module
+		if((used > 8'd254) || rd_full)				// complex variant for FIFO more than 256 words (each of 2 bytes). Versatile. Also that makes this state_machine similar to state_machine in input_process_spi module
+			MSG_LEN <= 8'd254;
+		else
+			MSG_LEN <= used;
 		PARITY_OUT <= wr_used[0] & (!rx_valid);
 		end
 	end

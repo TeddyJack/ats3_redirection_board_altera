@@ -73,6 +73,7 @@ parameter [1:0] payload	= 2'h3;
 
 //reg [($clog2(`NUM_SOURCES)-1):0] current_source;		// that's very good expression to calculate bus width from NUM_SOURCES, but it leads to "truncated" warning
 reg [3:0] current_source;										// so I've written maximum bus width
+reg dest_known;
 //reg [(`NUM_SOURCES-1):0] MSG_SENT;						// not used signal. may be valuable in future
 
 reg [2:0] state;
@@ -99,10 +100,11 @@ if(!RST)
 	PARITY_OUT <= 0;
 	//MSG_SENT <= 0;
 	MSG_START <= 0;
+	dest_known <= 0;
 	end
 else
 	case(state)
-	idle:
+	idle:		// 0
 		begin
 		if(!FLAG_EMPTY)		// if Slave FIFO has some data for us
 			begin
@@ -119,14 +121,14 @@ else
 				end
 			else
 				begin
-				if(current_source < `NUM_SOURCES)
+				if(current_source < (`NUM_SOURCES-1))
 					current_source <= current_source + 1'b1;
 				else
 					current_source <= 0;
 				end
 			end
 		end
-	wr_state1:	// "0"
+	wr_state1:	// 1
 		begin
 		if(!FLAG_FULL)
 			begin
@@ -148,7 +150,7 @@ else
 				end
 			end
 		end
-	wr_state2:	// "1"
+	wr_state2:	// 2
 		begin
 		MSG_START[current_source] <= 0;
 		SLWR <= 0;
@@ -158,17 +160,17 @@ else
 		else if(data_type == src_len)
 			data_type <= payload;
 		end
-	rd_state1:
+	rd_state1:	// 3
 		begin
 		SLOE <= 1;
 		state <= rd_state2;
 		data_type <= prefix;
 		end
-	rd_state2:
+	rd_state2:	// 4
 		begin
 		if(!FLAG_EMPTY)
 			begin
-			if(!SERIALIZER_BUSY[current_source])
+			if(!(SERIALIZER_BUSY[current_source] && dest_known))		// though source and destination indexes are whole, when message from PC is received, we shouldn't consider busy state of counting current_source
 				begin
 				SLRD <= 1;
 				state <= rd_state3;
@@ -181,7 +183,7 @@ else
 			data_type <= none;
 			end
 		end
-	rd_state3:
+	rd_state3:	// 5
 		begin
 		SLRD <= 0;
 		state <= rd_state2;
@@ -195,6 +197,7 @@ else
 			PARITY_OUT <= FD[12];
 			current_source <= FD[11:8];	// size of current_source
 			payload_len <= FD[7:0];
+			dest_known <= 1;
 			end
 		else if(data_type == payload)
 			begin
@@ -204,10 +207,11 @@ else
 				begin
 				payload_counter <= 0;
 				data_type <= prefix;
+				dest_known <= 0;
 				end
 			end
 		end
-	timeout:
+	timeout:	// 6
 		begin
 		//MSG_SENT[current_source] <= 0;
 		if(payload_counter < 2)	// таймаут 2 такта
@@ -216,6 +220,10 @@ else
 				begin
 				state <= idle;
 				payload_counter <= 0;
+				if(current_source < (`NUM_SOURCES-1))
+					current_source <= current_source + 1'b1;
+				else
+					current_source <= 0;
 				end
 		end
 	endcase
