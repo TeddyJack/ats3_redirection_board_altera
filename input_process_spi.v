@@ -81,7 +81,7 @@ else
 		if((used > 8'd254) || rd_full)						// because length field in msg header is 8 bits wide. No need to make it wider
 			MSG_LEN <= 8'd254;
 		else
-			MSG_LEN <= used;
+			MSG_LEN <= used[7:0];
 		end
 	end
 end

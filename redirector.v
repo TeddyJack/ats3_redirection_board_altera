@@ -23,12 +23,13 @@ output [1:0] FIFOADR,
 output PKTEND,
 output IFCLK,
 // LEDs on front panel
-output [`NUM_SPI:1] LEDS_BA,
+output [`NUM_LEDS:1] LEDS_BA_R,
+output [`NUM_LEDS:1] LEDS_BA_G,
+output [`NUM_LEDS:1] LEDS_BA_B,
 output LED_REMOTE,
 // UART
 input [(`NUM_UART-1):0] UART_RX,
 output [(`NUM_UART-1):0] UART_TX,
-output UART_GND,
 // I2C
 inout SDA,
 inout SCL,
@@ -37,15 +38,7 @@ output [3:0] GPIO
 );
 
 assign TX_CLK = (~RX_CLK);
-assign UART_GND = 0;
-
-pll pll(
-.inclk0(CLK_IN),
-.c0(ifclk)
-);
-wire ifclk;
-
-assign IFCLK = !ifclk;
+assign IFCLK = !CLK_IN;
 
 wire [(`NUM_SOURCES*16-1):0] fifo_q;
 wire [(`NUM_SOURCES-1):0] got_full_msg;
@@ -59,7 +52,7 @@ for(i=0; i<`NUM_SPI; i=i+1)
 	begin: wow
 	spi_process instance_name(
 	.RST(RST),
-	.SYS_CLK(ifclk),
+	.SYS_CLK(CLK_IN),
 	.RX_CLK(RX_CLK[i]),
 	.RX_DATA(RX_DATA[i]),
 	.RX_LOAD(RX_LOAD[i]),
@@ -83,7 +76,7 @@ for(i=0; i<`NUM_SPI; i=i+1)
 for(i=0; i<`NUM_UART; i=i+1)
 	begin: hoy
 	uart_process instance2_name(
-	.CLK(ifclk),
+	.CLK(CLK_IN),
 	.RST(RST),
 	.RX(UART_RX[i]),
 	.TX(UART_TX[i]),
@@ -103,7 +96,7 @@ for(i=0; i<`NUM_UART; i=i+1)
 endgenerate
 
 read_write_slave_fifo read_write_slave_fifo(
-.CLK(ifclk),
+.CLK(CLK_IN),
 .RST(RST),
 .FLAG_EMPTY(FLAG_EMPTY),
 .FLAG_FULL(FLAG_FULL),
