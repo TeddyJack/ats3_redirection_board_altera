@@ -37,8 +37,8 @@ inout SCL,
 output [3:0] GPIO
 );
 
-assign TX_CLK = (~RX_CLK);
-assign IFCLK = !CLK_IN;
+assign TX_CLK = {`NUM_SPI{CLK_IN}};
+assign IFCLK = CLK_IN;
 
 wire [(`NUM_SOURCES*16-1):0] fifo_q;
 wire [(`NUM_SOURCES-1):0] got_full_msg;
