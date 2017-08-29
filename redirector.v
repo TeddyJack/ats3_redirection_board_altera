@@ -23,12 +23,13 @@ output [1:0] FIFOADR,
 output PKTEND,
 output IFCLK,
 // LEDs on front panel
-output [`NUM_SPI:1] LEDS_BA,
+output [`NUM_LEDS:1] LEDS_BA_R,
+output [`NUM_LEDS:1] LEDS_BA_G,
+output [`NUM_LEDS:1] LEDS_BA_B,
 output LED_REMOTE,
 // UART
-input [(`NUM_UART-1):0] UART_RX,
+input [(`NUM_UART-1):0] UART_RX,			// RX and TX pins in Pin Planner were swapped due to wrong naming in scheme
 output [(`NUM_UART-1):0] UART_TX,
-output UART_GND,
 // I2C
 inout SDA,
 inout SCL,
@@ -36,16 +37,14 @@ inout SCL,
 output [3:0] GPIO
 );
 
-assign TX_CLK = (~RX_CLK);
-assign UART_GND = 0;
-
 pll pll(
 .inclk0(CLK_IN),
 .c0(ifclk)
 );
 wire ifclk;
 
-assign IFCLK = !ifclk;
+assign TX_CLK = {`NUM_SPI{ifclk}};
+assign IFCLK = !ifclk;						// without this action PKTEND is not always accepted by Cypress. Maybe it's better to fix this with some kinda signal delay
 
 wire [(`NUM_SOURCES*16-1):0] fifo_q;
 wire [(`NUM_SOURCES-1):0] got_full_msg;
@@ -75,7 +74,7 @@ for(i=0; i<`NUM_SPI; i=i+1)
 	.TX_LOAD(TX_LOAD[i]),
 	.TX_STOP(TX_STOP[i]),
 	
-	.DATA({FD[7:0],FD[15:8]}),	// words are transferred via cypress in little-endian format, we convert into big-endian
+	.DATA(`FD_CONNECT),
 	.ENA(cy_ena[i]),
 	.BUSY(serializer_busy[i])
 	);
@@ -87,7 +86,7 @@ for(i=0; i<`NUM_UART; i=i+1)
 	.RST(RST),
 	.RX(UART_RX[i]),
 	.TX(UART_TX[i]),
-	.DATA({FD[7:0],FD[15:8]}),
+	.DATA(`FD_CONNECT),
 	.ENA(cy_ena[`NUM_SPI+i]),
 	.MSG_LEN_IN(payload_len),
 	.PARITY_IN(parity_to_uart),
@@ -107,7 +106,7 @@ read_write_slave_fifo read_write_slave_fifo(
 .RST(RST),
 .FLAG_EMPTY(FLAG_EMPTY),
 .FLAG_FULL(FLAG_FULL),
-.FD({FD[7:0],FD[15:8]}),	// words are transferred via cypress in little-endian format, we convert into big-endian
+.FD(`FD_CONNECT),
 .fifo_q_bus(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
 .SERIALIZER_BUSY(serializer_busy),

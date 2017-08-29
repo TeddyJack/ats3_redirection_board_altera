@@ -40,7 +40,7 @@ uart uart(
 wire [7:0] rx_data;
 wire rx_valid;
 wire tx_ready;
-wire [31:0] prescale = `F_clk/(115200*8);	// = fclk / (baud * 8)
+wire [31:0] prescale = `F_clk / (115200 * 8);	// = fclk / (baud * 8)
 
 output_process_uart output_process_uart(
 .CLK(CLK),

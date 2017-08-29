@@ -1,4 +1,4 @@
-set NUM_SPI 2
+set NUM_SPI 1
 
 create_clock -period 50MHz [get_ports CLK_IN]
 

@@ -39,7 +39,7 @@ input_process_spi input_process_spi(
 
 output_process_spi output_process_spi(
 .RST(RST),
-.RX_CLK(RX_CLK),
+.TX_CLK(SYS_CLK),
 .TX_DATA(TX_DATA),
 .TX_LOAD(TX_LOAD),
 .RX_STOP(RX_STOP),

@@ -70,7 +70,7 @@ else
 		if((used > 8'd254) || rd_full)				// complex variant for FIFO more than 256 words (each of 2 bytes). Versatile. Also that makes this state_machine similar to state_machine in input_process_spi module
 			MSG_LEN <= 8'd254;
 		else
-			MSG_LEN <= used;
+			MSG_LEN <= used[7:0];
 		PARITY_OUT <= wr_used[0] & (!rx_valid);
 		end
 	end

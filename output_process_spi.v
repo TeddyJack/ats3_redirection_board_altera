@@ -1,19 +1,19 @@
 module output_process_spi(
 input RST,
-input RX_CLK,
+input TX_CLK,
 output TX_DATA,
 output TX_LOAD,
 input RX_STOP,
 
 input [15:0] DATA,
-input ENA,				// keep in mind that ENA clocked with SYS_CLK, but serializer is driven by RX_CLK, but that's ok, we have 16 safe RX_CLK periods until new ENA gonna be detected
+input ENA,
 output BUSY
 );
 
 assign BUSY = serializer_busy | RX_STOP;
 
 serializer serializer(
-.CLK(RX_CLK),
+.CLK(TX_CLK),
 .RST(RST),
 .ADDR(3'h1),
 .DATA(DATA),
