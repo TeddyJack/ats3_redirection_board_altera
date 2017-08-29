@@ -75,6 +75,10 @@ parameter [1:0] payload	= 2'h3;
 reg [3:0] current_source;										// so I've written maximum bus width
 reg dest_known;
 //reg [(`NUM_SOURCES-1):0] MSG_SENT;						// not used signal. may be valuable in future
+reg [7:0] saved_counter;
+reg [1:0] saved_data_type;
+reg [3:0] saved_source;
+reg write_tearing;
 
 reg [2:0] state;
 parameter [2:0] idle						= 3'h0;
@@ -101,6 +105,10 @@ if(!RST)
 	//MSG_SENT <= 0;
 	MSG_START <= 0;
 	dest_known <= 0;
+	saved_counter <= 0;
+	saved_data_type <= 0;
+	saved_source <= 0;
+	write_tearing <= 0;
 	end
 else
 	case(state)
@@ -113,7 +121,16 @@ else
 			end
 		else if(!FLAG_FULL)	// if we have some data for Slave FIFO
 			begin
-			if(GOT_FULL_MSG[current_source])
+			if(write_tearing)
+				begin
+				FIFOADR <= 2'b10;
+				state <= wr_state1;
+				data_type <= saved_data_type;
+				payload_counter <= saved_counter;
+				current_source <= saved_source;
+				write_tearing <= 0;
+				end
+			else if(GOT_FULL_MSG[current_source])
 				begin
 				FIFOADR <= 2'b10;
 				state <= wr_state1;
@@ -148,6 +165,14 @@ else
 				payload_counter <= 0;
 				//MSG_SENT[current_source] <= 1;
 				end
+			end
+		else
+			begin
+			saved_data_type <= data_type;
+			saved_counter <= payload_counter;
+			write_tearing <= 1;
+			saved_source <= current_source;
+			state <= idle;
 			end
 		end
 	wr_state2:	// 2
