@@ -79,6 +79,7 @@ reg [7:0] saved_counter;
 reg [1:0] saved_data_type;
 reg [3:0] saved_source;
 reg write_tearing;
+reg [31:0] timer_cnt;
 
 reg [2:0] state;
 parameter [2:0] idle						= 3'h0;
@@ -109,6 +110,7 @@ if(!RST)
 	saved_data_type <= 0;
 	saved_source <= 0;
 	write_tearing <= 0;
+	timer_cnt <= 0;
 	end
 else
 	case(state)
@@ -199,6 +201,21 @@ else
 				begin
 				SLRD <= 1;
 				state <= rd_state3;
+				timer_cnt <= 0;
+				end
+			else if(SERIALIZER_BUSY[current_source])
+				begin
+				if(timer_cnt < `BUSY_LIMIT)
+					timer_cnt <= timer_cnt + 1'b1;
+				else													// if BUSY is too long
+					begin
+					timer_cnt <= 0;
+					state <= idle;
+					SLOE <= 0;
+					data_type <= none;
+					payload_counter <= 0;
+					dest_known <= 0;
+					end
 				end
 			end
 		else
@@ -206,6 +223,8 @@ else
 			state <= idle;
 			SLOE <= 0;
 			data_type <= none;
+			payload_counter <= 0;		// if length of msg is longer than actual number of words, there will be an error. So we are resetting the payload counter
+			dest_known <= 0;
 			end
 		end
 	rd_state3:	// 5

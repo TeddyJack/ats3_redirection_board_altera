@@ -7,7 +7,7 @@
 `define UART_WORDS		32			// how many words used in FIFO to trigger GOT_FULL_MESSAGE
 `define SPI_WORDS			256
 `define NUM_LEDS			3
-`define BIG_ENDIAN					// FIX IT! uncomment this line for easy debug. Right order of bytes inside word
+`define BUSY_TIMEOUT		1000		// in ms. In case of busy is too long
 
 
 
@@ -15,8 +15,4 @@
 `define NUM_SOURCES	(`NUM_SPI + `NUM_UART)
 `define PKTEND_LIMIT	((`F_clk / 1000) * `PKTEND_PERIOD - 1)
 `define GFM_LIMIT		((`F_clk / 1000) * `GFM_PERIOD - 1)
-`ifdef BIG_ENDIAN
-	`define FD_CONNECT	{FD[7:0],FD[15:8]}
-`else
-	`define FD_CONNECT	FD					// doesn't work yet
-`endif
+`define BUSY_LIMIT	((`F_clk / 1000) * `BUSY_TIMEOUT - 1)

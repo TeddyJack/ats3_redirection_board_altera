@@ -74,7 +74,7 @@ for(i=0; i<`NUM_SPI; i=i+1)
 	.TX_LOAD(TX_LOAD[i]),
 	.TX_STOP(TX_STOP[i]),
 	
-	.DATA(`FD_CONNECT),
+	.DATA({FD[7:0],FD[15:8]}),	// converting to big-endian format
 	.ENA(cy_ena[i]),
 	.BUSY(serializer_busy[i])
 	);
@@ -86,7 +86,7 @@ for(i=0; i<`NUM_UART; i=i+1)
 	.RST(RST),
 	.RX(UART_RX[i]),
 	.TX(UART_TX[i]),
-	.DATA(`FD_CONNECT),
+	.DATA({FD[7:0],FD[15:8]}),	// converting to big-endian format
 	.ENA(cy_ena[`NUM_SPI+i]),
 	.MSG_LEN_IN(payload_len),
 	.PARITY_IN(parity_to_uart),
@@ -106,7 +106,7 @@ read_write_slave_fifo read_write_slave_fifo(
 .RST(RST),
 .FLAG_EMPTY(FLAG_EMPTY),
 .FLAG_FULL(FLAG_FULL),
-.FD(`FD_CONNECT),
+.FD({FD[7:0],FD[15:8]}),	// converting to big-endian format
 .fifo_q_bus(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
 .SERIALIZER_BUSY(serializer_busy),
