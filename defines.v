@@ -8,6 +8,7 @@
 `define SPI_WORDS			256
 `define NUM_LEDS			3
 `define BUSY_TIMEOUT		1000		// in ms. In case of busy is too long
+//`define BIG_ENDIAN
 
 
 
@@ -16,3 +17,4 @@
 `define PKTEND_LIMIT	((`F_clk / 1000) * `PKTEND_PERIOD - 1)
 `define GFM_LIMIT		((`F_clk / 1000) * `GFM_PERIOD - 1)
 `define BUSY_LIMIT	((`F_clk / 1000) * `BUSY_TIMEOUT - 1)
+`define swap_bytes(some_port) {some_port[7:0],some_port[15:8]}

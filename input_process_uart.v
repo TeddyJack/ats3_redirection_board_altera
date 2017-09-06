@@ -20,7 +20,7 @@ uart_fifo uart_fifo(
 .rdreq(RD_REQ),
 .wrclk(CLK),
 .wrreq(rx_valid | wr_req_stuff),
-.q({FIFO_Q[7:0],FIFO_Q[15:8]}),
+.q(FIFO_Q),
 .rdfull(rd_full),
 .rdusedw(rd_used),
 .wrfull(wr_full),
