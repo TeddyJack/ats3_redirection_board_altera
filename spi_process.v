@@ -32,7 +32,7 @@ input_process_spi input_process_spi(
 
 .RD_REQ(RD_REQ),
 .MSG_START(MSG_START),
-.FIFO_Q(FIFO_Q),
+.FIFO_Q(`ifdef BIG_ENDIAN FIFO_Q `else `swap_bytes(FIFO_Q) `endif),
 .GOT_FULL_MSG(GOT_FULL_MSG),
 .MSG_LEN(MSG_LEN)
 );

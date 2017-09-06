@@ -65,7 +65,7 @@ input_process_uart input_process_uart(
 .rx_valid(rx_valid),
 .RD_REQ(RD_REQ),
 .MSG_START(MSG_START),
-.FIFO_Q(FIFO_Q),
+.FIFO_Q(`swap_bytes(FIFO_Q)),
 .MSG_LEN(MSG_LEN),
 .PARITY_OUT(PARITY_OUT),
 .GOT_FULL_MESSAGE(GOT_FULL_MESSAGE)

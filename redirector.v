@@ -37,14 +37,8 @@ inout SCL,
 output [3:0] GPIO
 );
 
-pll pll(
-.inclk0(CLK_IN),
-.c0(ifclk)
-);
-wire ifclk;
-
-assign TX_CLK = {`NUM_SPI{ifclk}};
-assign IFCLK = !ifclk;						// without this action PKTEND is not always accepted by Cypress. Maybe it's better to fix this with some kinda signal delay
+assign TX_CLK = {`NUM_SPI{CLK_IN}};
+assign IFCLK = !CLK_IN;						// without this action PKTEND is not always accepted by Cypress. Maybe it's better to fix this with some kinda signal delay
 
 wire [(`NUM_SOURCES*16-1):0] fifo_q;
 wire [(`NUM_SOURCES-1):0] got_full_msg;
@@ -58,7 +52,7 @@ for(i=0; i<`NUM_SPI; i=i+1)
 	begin: wow
 	spi_process instance_name(
 	.RST(RST),
-	.SYS_CLK(ifclk),
+	.SYS_CLK(CLK_IN),
 	.RX_CLK(RX_CLK[i]),
 	.RX_DATA(RX_DATA[i]),
 	.RX_LOAD(RX_LOAD[i]),
@@ -74,7 +68,7 @@ for(i=0; i<`NUM_SPI; i=i+1)
 	.TX_LOAD(TX_LOAD[i]),
 	.TX_STOP(TX_STOP[i]),
 	
-	.DATA({FD[7:0],FD[15:8]}),	// converting to big-endian format
+	.DATA(`ifdef BIG_ENDIAN `swap_bytes(FD) `else FD `endif),
 	.ENA(cy_ena[i]),
 	.BUSY(serializer_busy[i])
 	);
@@ -82,11 +76,11 @@ for(i=0; i<`NUM_SPI; i=i+1)
 for(i=0; i<`NUM_UART; i=i+1)
 	begin: hoy
 	uart_process instance2_name(
-	.CLK(ifclk),
+	.CLK(CLK_IN),
 	.RST(RST),
 	.RX(UART_RX[i]),
 	.TX(UART_TX[i]),
-	.DATA({FD[7:0],FD[15:8]}),	// converting to big-endian format
+	.DATA(`swap_bytes(FD)),
 	.ENA(cy_ena[`NUM_SPI+i]),
 	.MSG_LEN_IN(payload_len),
 	.PARITY_IN(parity_to_uart),
@@ -102,11 +96,11 @@ for(i=0; i<`NUM_UART; i=i+1)
 endgenerate
 
 read_write_slave_fifo read_write_slave_fifo(
-.CLK(ifclk),
+.CLK(CLK_IN),
 .RST(RST),
 .FLAG_EMPTY(FLAG_EMPTY),
 .FLAG_FULL(FLAG_FULL),
-.FD({FD[7:0],FD[15:8]}),	// converting to big-endian format
+.FD(`swap_bytes(FD)),
 .fifo_q_bus(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
 .SERIALIZER_BUSY(serializer_busy),
