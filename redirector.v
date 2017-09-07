@@ -34,8 +34,11 @@ output [(`NUM_UART-1):0] UART_TX,
 inout SDA,
 inout SCL,
 // GPIO
-output [3:0] GPIO
+output [6:0] GPIO
 );
+
+assign GPIO[6] = TX_STOP[0];
+assign GPIO[5] = FLAG_FULL;
 
 assign TX_CLK = {`NUM_SPI{CLK_IN}};
 assign IFCLK = !CLK_IN;						// without this action PKTEND is not always accepted by Cypress. Maybe it's better to fix this with some kinda signal delay
