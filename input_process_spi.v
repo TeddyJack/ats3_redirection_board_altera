@@ -1,3 +1,5 @@
+`include "defines.v"
+
 module input_process_spi(
 input RST,
 input SYS_CLK,
@@ -14,7 +16,7 @@ output reg GOT_FULL_MSG,
 output reg [7:0] MSG_LEN
 );
 
-assign TX_STOP = wr_full;
+assign TX_STOP = wr_full | (used >= 10'd1022);
 
 deserializer deserializer(
 .RST(RST),
@@ -36,7 +38,7 @@ in_fifo_spi in_fifo_spi(
 .rdclk(SYS_CLK),
 .rdreq(RD_REQ),
 .wrclk(RX_CLK),
-.wrreq(p_ena),
+.wrreq(p_ena & (p_addr == `SPI_3BIT_ADDR)),
 .q(FIFO_Q),
 .rdfull(rd_full),
 .rdusedw(used),
