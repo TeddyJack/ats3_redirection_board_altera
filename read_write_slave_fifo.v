@@ -21,8 +21,7 @@ output reg PKTEND,
 output [(`NUM_SOURCES-1):0] ENA,
 
 input [(`NUM_SOURCES-1):0] PARITY_IN,
-output reg PARITY_OUT,
-output reg [7:0] payload_len,
+output reg LAST_AND_ODD,
 
 output [2:0] state_monitor,
 output reg [7:0] payload_counter,
@@ -80,6 +79,8 @@ reg [1:0] saved_data_type;
 reg [3:0] saved_source;
 reg write_tearing;
 reg [31:0] timer_cnt;
+reg [7:0] payload_len;
+reg parity_out;
 
 reg [2:0] state;
 parameter [2:0] idle						= 3'h0;
@@ -102,7 +103,7 @@ if(!RST)
 	payload_counter <= 0;
 	payload_len <= 0;
 	current_source <= 0;
-	PARITY_OUT <= 0;
+	parity_out <= 0;
 	//MSG_SENT <= 0;
 	MSG_START <= 0;
 	dest_known <= 0;
@@ -111,6 +112,7 @@ if(!RST)
 	saved_source <= 0;
 	write_tearing <= 0;
 	timer_cnt <= 0;
+	LAST_AND_ODD <= 0;
 	end
 else
 	case(state)
@@ -202,6 +204,7 @@ else
 				SLRD <= 1;
 				state <= rd_state3;
 				timer_cnt <= 0;
+				LAST_AND_ODD <= (data_type == payload) & (payload_counter == (payload_len - 1'b1)) & parity_out;
 				end
 			else if(SERIALIZER_BUSY[current_source])
 				begin
@@ -229,6 +232,7 @@ else
 		end
 	rd_state3:	// 5
 		begin
+		LAST_AND_ODD <= 0;
 		SLRD <= 0;
 		state <= rd_state2;
 		if((data_type == prefix) && (FD == `PREFIX))
@@ -238,7 +242,7 @@ else
 		else if(data_type == src_len)
 			begin
 			data_type <= payload;
-			PARITY_OUT <= FD[12];
+			parity_out <= FD[12];
 			current_source <= FD[11:8];	// size of current_source
 			payload_len <= FD[7:0];
 			dest_known <= 1;

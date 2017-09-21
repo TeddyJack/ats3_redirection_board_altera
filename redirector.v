@@ -85,8 +85,7 @@ for(i=0; i<`NUM_UART; i=i+1)
 	.TX(UART_TX[i]),
 	.DATA(`swap_bytes(FD)),
 	.ENA(cy_ena[`NUM_SPI+i]),
-	.MSG_LEN_IN(payload_len),
-	.PARITY_IN(parity_to_uart),
+	.LAST_AND_ODD(last_and_odd),
 	.BUSY(serializer_busy[`NUM_SPI+i]),
 	.RD_REQ(rd_req[`NUM_SPI+i]),
 	.MSG_START(msg_start[`NUM_SPI+i]),
@@ -119,13 +118,11 @@ read_write_slave_fifo read_write_slave_fifo(
 .ENA(cy_ena),
 
 .PARITY_IN(parity_from_uart),
-.PARITY_OUT(parity_to_uart),
-.payload_len(payload_len)
+.LAST_AND_ODD(last_and_odd)
 );
 wire [(`NUM_SOURCES-1):0] rd_req;
 wire [(`NUM_SOURCES-1):0] msg_start;
 wire [(`NUM_SOURCES-1):0] cy_ena;
-wire [7:0] payload_len;
-wire parity_to_uart;
+wire last_and_odd;
 
 endmodule

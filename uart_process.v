@@ -8,8 +8,7 @@ output TX,
 
 input [15:0] DATA,
 input ENA,
-input [7:0] MSG_LEN_IN,
-input PARITY_IN,
+input LAST_AND_ODD,
 output BUSY,
 
 input RD_REQ,
@@ -50,8 +49,7 @@ output_process_uart output_process_uart(
 .tx_valid(tx_valid),
 .DATA(DATA),
 .ENA(ENA),
-.MSG_LEN_IN(MSG_LEN_IN),
-.PARITY_IN(PARITY_IN),
+.LAST_AND_ODD(LAST_AND_ODD),
 .BUSY(BUSY)
 );
 wire [7:0] tx_data;
