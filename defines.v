@@ -2,13 +2,14 @@
 `define NUM_UART			1
 `define PREFIX				16'h44BB
 `define F_clk				48000000	// Make sure that in PLL the same value
-`define PKTEND_PERIOD	5			// in ms
-`define GFM_PERIOD		1			// in ms (GFM = got full message), time period of triggering GOT_FULL_MESSAGE if input FIFO is not full enough
+`define PKTEND_PERIOD	5		// in ms
+`define GFM_PERIOD		1		// in ms (GFM = got full message), time period of triggering GOT_FULL_MESSAGE if input FIFO is not full enough
 `define UART_WORDS		32			// how many words used in FIFO to trigger GOT_FULL_MESSAGE
 `define SPI_WORDS			256
 `define NUM_LEDS			3
 `define BUSY_TIMEOUT		1000		// in ms. In case of busy is too long
 `define SPI_3BIT_ADDR	3'd1
+`define SPI_FIFO_SIZE	2048		// in words
 //`define BIG_ENDIAN
 
 

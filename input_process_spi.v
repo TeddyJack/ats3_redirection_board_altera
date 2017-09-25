@@ -16,7 +16,9 @@ output reg GOT_FULL_MSG,
 output reg [7:0] MSG_LEN
 );
 
-assign TX_STOP = wr_full | (used >= 10'd1022);
+wire [31:0] fifo_limit_32 = `SPI_FIFO_SIZE - 2;
+wire [$clog2(`SPI_FIFO_SIZE)-1:0] fifo_limit = fifo_limit_32[$clog2(`SPI_FIFO_SIZE)-1:0];
+assign TX_STOP = wr_full | (used >= fifo_limit);
 
 deserializer deserializer(
 .RST(RST),
@@ -32,7 +34,7 @@ wire [2:0] p_addr;
 wire [15:0] p_data;
 wire p_ena;
 
-in_fifo_spi in_fifo_spi(
+in_fifo_spi #(`SPI_FIFO_SIZE) in_fifo_spi(
 .aclr(!RST),
 .data(p_data),
 .rdclk(SYS_CLK),
@@ -44,7 +46,7 @@ in_fifo_spi in_fifo_spi(
 .rdusedw(used),
 .wrfull(wr_full)
 );
-wire [9:0] used;
+wire [$clog2(`SPI_FIFO_SIZE)-1:0] used;
 wire rd_full;
 wire wr_full;
 
