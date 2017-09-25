@@ -9,6 +9,7 @@
 `define NUM_LEDS			3
 `define BUSY_TIMEOUT		1000		// in ms. In case of busy is too long
 `define SPI_3BIT_ADDR	3'd1
+`define SPI_FIFO_SIZE	2048		// in words
 //`define BIG_ENDIAN
 
 
