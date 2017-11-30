@@ -37,7 +37,7 @@ inout SCL,
 output [6:0] GPIO
 );
 
-assign GPIO[6] = TX_STOP[0];
+assign GPIO[6] = FLAG_EMPTY;
 assign GPIO[5] = FLAG_FULL;
 
 assign TX_CLK = {`NUM_SPI{CLK_IN}};
