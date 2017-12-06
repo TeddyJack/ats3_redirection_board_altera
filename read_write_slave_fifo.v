@@ -8,7 +8,6 @@ input FLAG_FULL,
 inout [15:0] FD,
 input [(`NUM_SOURCES*16-1):0] fifo_q_bus, 
 input [(`NUM_SOURCES-1):0] GOT_FULL_MSG,
-input [(`NUM_SOURCES-1):0] SERIALIZER_BUSY,
 input [(`NUM_SOURCES*8-1):0] MSG_LEN_BUS,
 
 output reg SLOE,
@@ -72,13 +71,12 @@ parameter [1:0] payload	= 2'h3;
 
 //reg [($clog2(`NUM_SOURCES)-1):0] current_source;		// that's very good expression to calculate bus width from NUM_SOURCES, but it leads to "truncated" warning
 reg [3:0] current_source;										// so I've written maximum bus width
-reg dest_known;
+//reg dest_known;													// not used signal. may be valuable in future
 //reg [(`NUM_SOURCES-1):0] MSG_SENT;						// not used signal. may be valuable in future
 reg [7:0] saved_counter;
 reg [1:0] saved_data_type;
 reg [3:0] saved_source;
 reg write_tearing;
-reg [31:0] timer_cnt;
 reg [7:0] payload_len;
 reg parity_out;
 
@@ -106,12 +104,11 @@ if(!RST)
 	parity_out <= 0;
 	//MSG_SENT <= 0;
 	MSG_START <= 0;
-	dest_known <= 0;
+	//dest_known <= 0;
 	saved_counter <= 0;
 	saved_data_type <= 0;
 	saved_source <= 0;
 	write_tearing <= 0;
-	timer_cnt <= 0;
 	LAST_AND_ODD <= 0;
 	end
 else
@@ -174,6 +171,7 @@ else
 			begin
 			saved_data_type <= data_type;
 			saved_counter <= payload_counter;
+			payload_counter <= 0;
 			write_tearing <= 1;
 			saved_source <= current_source;
 			state <= idle;
@@ -199,27 +197,9 @@ else
 		begin
 		if(!FLAG_EMPTY)
 			begin
-			if(!(SERIALIZER_BUSY[current_source] && dest_known))		// though source and destination indexes are whole, when message from PC is received, we shouldn't consider busy state of counting current_source
-				begin
-				SLRD <= 1;
-				state <= rd_state3;
-				timer_cnt <= 0;
-				LAST_AND_ODD <= (data_type == payload) & (payload_counter == (payload_len - 1'b1)) & parity_out;
-				end
-			else if(SERIALIZER_BUSY[current_source])
-				begin
-				if(timer_cnt < `BUSY_LIMIT)
-					timer_cnt <= timer_cnt + 1'b1;
-				else													// if BUSY is too long
-					begin
-					timer_cnt <= 0;
-					state <= idle;
-					SLOE <= 0;
-					data_type <= none;
-					payload_counter <= 0;
-					dest_known <= 0;
-					end
-				end
+			SLRD <= 1;
+			state <= rd_state3;
+			LAST_AND_ODD <= (data_type == payload) & (payload_counter == (payload_len - 1'b1)) & parity_out;
 			end
 		else
 			begin
@@ -227,7 +207,7 @@ else
 			SLOE <= 0;
 			data_type <= none;
 			payload_counter <= 0;		// if length of msg is longer than actual number of words, there will be an error. So we are resetting the payload counter
-			dest_known <= 0;
+			//dest_known <= 0;
 			end
 		end
 	rd_state3:	// 5
@@ -245,7 +225,7 @@ else
 			parity_out <= FD[12];
 			current_source <= FD[11:8];	// size of current_source
 			payload_len <= FD[7:0];
-			dest_known <= 1;
+			//dest_known <= 1;
 			end
 		else if(data_type == payload)
 			begin
@@ -255,7 +235,7 @@ else
 				begin
 				payload_counter <= 0;
 				data_type <= prefix;
-				dest_known <= 0;
+				//dest_known <= 0;
 				end
 			end
 		end

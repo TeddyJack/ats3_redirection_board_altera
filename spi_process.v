@@ -18,8 +18,7 @@ output TX_LOAD,
 output TX_STOP,
 
 input [15:0] DATA,
-input ENA,
-output BUSY
+input ENA
 );
 
 input_process_spi input_process_spi(
@@ -45,8 +44,7 @@ output_process_spi output_process_spi(
 .RX_STOP(RX_STOP),
 
 .DATA(DATA),
-.ENA(ENA),
-.BUSY(BUSY)
+.ENA(ENA)
 );
 
 endmodule

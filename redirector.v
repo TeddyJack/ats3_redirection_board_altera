@@ -46,7 +46,6 @@ assign IFCLK = !CLK_IN;						// without this action PKTEND is not always accepte
 wire [(`NUM_SOURCES*16-1):0] fifo_q;
 wire [(`NUM_SOURCES-1):0] got_full_msg;
 wire [(`NUM_SOURCES*8-1):0] msg_len;
-wire [(`NUM_SOURCES-1):0] serializer_busy;
 wire [(`NUM_SOURCES-1):0] parity_from_uart;
 
 genvar i;
@@ -72,8 +71,7 @@ for(i=0; i<`NUM_SPI; i=i+1)
 	.TX_STOP(TX_STOP[i]),
 	
 	.DATA(`ifdef BIG_ENDIAN `swap_bytes(FD) `else FD `endif),
-	.ENA(cy_ena[i]),
-	.BUSY(serializer_busy[i])
+	.ENA(cy_ena[i])
 	);
 	end
 for(i=0; i<`NUM_UART; i=i+1)
@@ -86,7 +84,6 @@ for(i=0; i<`NUM_UART; i=i+1)
 	.DATA(`swap_bytes(FD)),
 	.ENA(cy_ena[`NUM_SPI+i]),
 	.LAST_AND_ODD(last_and_odd),
-	.BUSY(serializer_busy[`NUM_SPI+i]),
 	.RD_REQ(rd_req[`NUM_SPI+i]),
 	.MSG_START(msg_start[`NUM_SPI+i]),
 	.FIFO_Q(fifo_q[(16*(`NUM_SPI+i)+15):(16*(`NUM_SPI+i))]),
@@ -105,7 +102,6 @@ read_write_slave_fifo read_write_slave_fifo(
 .FD(`swap_bytes(FD)),
 .fifo_q_bus(fifo_q),
 .GOT_FULL_MSG(got_full_msg),
-.SERIALIZER_BUSY(serializer_busy),
 .MSG_LEN_BUS(msg_len),
 
 .SLOE(SLOE),
