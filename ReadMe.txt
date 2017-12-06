@@ -41,11 +41,11 @@ Top view socket:
    +---+---+---+   +---+---+---+
 
 Top view plug:
-   +---+---+---+---+---+---+---+
- 2 |   |GND|   |   |   |   |   | 14
-   +---+---+---+---+---+---+---+
- 1 |   |TX |RX |   |   |   |   | 13
-   +---+---+---+---+---+---+---+	
+   +---+---+---+
+ 2 |   |GND|   | 6
+   +---+---+---+
+ 1 |   |TX |RX | 5
+   +---+---+---+	
 
 
 To connect SPI-device (e.g. Blok Analiza) use twisted IDC flat cable (where RXs swapped with TXs).
