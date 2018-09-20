@@ -3,6 +3,9 @@ Project may run on 2 different PCBs:
 1) HUB (native)
 2) Kom and Sopr with DE0
 
+Only MASTER branch is verified. PCB_old_kom_sopr branch - is obsolete
+Switching the boards is performed by replacing files and changing text variables and furthermore compiling.
+
 ==============HUB PCB=========================
 
 To run project on HUB PCB:

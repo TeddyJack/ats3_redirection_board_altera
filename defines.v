@@ -1,5 +1,5 @@
-`define NUM_SPI			1			// you must change NUM_SPI value in .sdc file as well
-`define NUM_UART			1
+`define NUM_SPI			4			// you must change NUM_SPI value in .sdc file as well
+`define NUM_UART			2
 `define PREFIX				16'h44BB
 `define F_clk				48000000	// Make sure that in PLL the same value
 `define PKTEND_PERIOD	20		// in ms
