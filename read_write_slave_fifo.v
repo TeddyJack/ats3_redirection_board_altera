@@ -5,7 +5,7 @@ input CLK,
 input RST,
 input FLAG_EMPTY,
 input FLAG_FULL,
-inout [15:0] FD,
+input [15:0] FD,
 input [(`NUM_SOURCES*16-1):0] fifo_q_bus, 
 input [(`NUM_SOURCES-1):0] GOT_FULL_MSG,
 input [(`NUM_SOURCES*8-1):0] MSG_LEN_BUS,
@@ -18,6 +18,7 @@ output reg SLRD,
 output reg [1:0] FIFOADR,
 output reg PKTEND,
 output [(`NUM_SOURCES-1):0] ENA,
+output reg [15:0] data,
 
 input [(`NUM_SOURCES-1):0] PARITY_IN,
 output reg LAST_AND_ODD,
@@ -29,7 +30,6 @@ output [1:0] data_type_mon
 
 assign state_monitor = state;
 assign data_type_mon = data_type;
-assign FD = SLOE ? 16'hzzzz : data;
 
 wire [15:0] fifo_q [(`NUM_SOURCES-1):0];
 wire [7:0] MSG_LEN [(`NUM_SOURCES-1):0];
@@ -49,7 +49,6 @@ endgenerate
 
 
 
-reg [15:0] data;
 always@(*)
 case(data_type)
 prefix:	data = `PREFIX;

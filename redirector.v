@@ -112,6 +112,7 @@ read_write_slave_fifo read_write_slave_fifo(
 .FIFOADR(FIFOADR),
 .PKTEND(PKTEND),
 .ENA(cy_ena),
+.data(data),
 
 .PARITY_IN(parity_from_uart),
 .LAST_AND_ODD(last_and_odd)
@@ -120,5 +121,8 @@ wire [(`NUM_SOURCES-1):0] rd_req;
 wire [(`NUM_SOURCES-1):0] msg_start;
 wire [(`NUM_SOURCES-1):0] cy_ena;
 wire last_and_odd;
+wire [15:0] data;
+
+assign FD = SLOE ? 16'hzzzz : `swap_bytes(data);
 
 endmodule

@@ -55,6 +55,8 @@ else
 			rd_req <= 1;
 			state <= capture;
 			end
+		else
+			rd_req <= 0;	// if "read from empty FIFO protection" is disabled, state machine was noticed to stuck in this state with rd_req = 1. This line fights with consequences, not the reason. Should fix in future
 		end
 	capture:
 		begin
